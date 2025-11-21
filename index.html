@@ -159,7 +159,7 @@
             height: 100vh;
             z-index: -10;
             pointer-events: none;
-            opacity: 0.7; /* Adjusted Brightness */
+            opacity: 0.8; /* HIGH BRIGHTNESS */
         }
 
         /* --- UI ELEMENTS --- */
@@ -176,7 +176,7 @@
         }
 
         /* Custom Scrollbar */
-        .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; } /* Added height for horiz scroll */
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #00ff41; }
@@ -191,10 +191,10 @@
             transform: translateY(0);
         }
 
-        /* Tab Active State - Dynamic Border Color */
+        /* Tab Active State - Responsive */
         .tab-btn.active {
             background: rgba(0, 255, 65, 0.05);
-            border-color: #00ff41; /* Generic color, side controlled by width classes */
+            border-color: #00ff41;
             color: #00ff41;
         }
 
@@ -233,14 +233,14 @@
             </div>
 
             <!-- Mobile Menu Button -->
-            <button id="menuBtn" class="md:hidden text-[#00ff41]">
+            <button id="menuBtn" class="md:hidden text-[#00ff41] z-50 relative">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
             </button>
         </div>
     </nav>
 
-    <!-- Mobile Menu Overlay -->
-    <div id="mobileMenu" class="fixed inset-0 z-40 bg-black/95 backdrop-blur-xl flex flex-col justify-center items-center space-y-8 touch-none translate-x-full transition-transform duration-300">
+    <!-- Mobile Menu Overlay (Z-Index Fixed) -->
+    <div id="mobileMenu" class="fixed inset-0 z-[100] bg-black/95 backdrop-blur-xl flex flex-col justify-center items-center space-y-8 touch-none translate-x-full transition-transform duration-300">
         <button id="closeMenuBtn" class="absolute top-6 right-6 p-4 text-white/50 hover:text-white text-3xl">&times;</button>
         <a href="#command" onclick="toggleMenu()" class="text-2xl font-serif text-white hover:text-[#00ff41]">Command Center</a>
         <a href="#streams" onclick="toggleMenu()" class="text-2xl font-serif text-white hover:text-[#00ff41]">Live Streams</a>
@@ -275,7 +275,7 @@
         </div>
     </section>
 
-    <!-- COMMAND CENTER (TAB LAYOUT RESTORED) -->
+    <!-- COMMAND CENTER (TAB LAYOUT - MOBILE SCROLL FIXED) -->
     <section id="command" class="py-20 px-6 max-w-7xl mx-auto">
         <div class="flex items-end justify-between mb-8 reveal">
             <h2 class="text-3xl font-serif text-white">Command Center</h2>
@@ -283,8 +283,8 @@
         </div>
 
         <div class="glass-panel rounded-xl flex flex-col md:flex-row min-h-[600px] overflow-hidden reveal">
-            <!-- Sidebar Tabs (Mobile: Horizontal Scroll, Desktop: Vertical) -->
-            <div class="w-full md:w-64 border-b md:border-b-0 md:border-r border-white/10 bg-black/20 flex flex-row md:flex-col overflow-x-auto md:overflow-y-auto custom-scrollbar" id="hub-tabs">
+            <!-- Sidebar Tabs (Fixed for Mobile Scroll) -->
+            <div class="w-full md:w-64 border-b md:border-b-0 md:border-r border-white/10 bg-black/20 flex flex-row md:flex-col overflow-x-auto custom-scrollbar" id="hub-tabs">
                 <!-- JS Injected -->
             </div>
 
@@ -399,7 +399,7 @@
 
     <!-- MODALS (Hidden) -->
     
-    <!-- AI TERMINAL (Removed DeepSeek) -->
+    <!-- AI TERMINAL (DeepSeek Removed) -->
     <div id="neuralTerminal" class="fixed inset-0 z-[100] bg-black/90 backdrop-blur-lg hidden flex items-center justify-center p-2 md:p-4">
         <div class="glass-panel rounded-lg w-full max-w-5xl h-[85vh] flex flex-col relative border border-[#00ff41]/20 shadow-2xl overflow-hidden">
             <!-- Header -->
@@ -519,12 +519,13 @@
 
     <!-- JAVASCRIPT LOGIC -->
     <script>
-        // --- SUBTLE MATRIX (Restored) ---
+        // --- BRIGHTER MATRIX ---
         const canvas = document.getElementById('matrix-bg');
         const ctx = canvas.getContext('2d');
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
-        const chars = '010101アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン';
+        
+        const chars = '0123456789ABCDEF'; 
         const fontSize = 14;
         let columns = canvas.width / fontSize;
         let drops = [];
@@ -532,44 +533,43 @@
         function initDrops() { 
             drops = []; 
             columns = canvas.width / fontSize; 
-            for(let x = 0; x < columns; x++) drops[x] = Math.random() * -100; // Random start
+            for(let x = 0; x < columns; x++) drops[x] = Math.random() * -100; 
         }
         initDrops();
 
         function drawMatrix() {
-            // Very transparent fade for longer, subtler trails
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.08)'; 
+            // Transparent fade for trails
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.05)'; 
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             
-            ctx.fillStyle = '#0f3a1a'; // Very dark green for most chars
             ctx.font = fontSize + 'px monospace';
             
             for(let i = 0; i < drops.length; i++) {
                 const text = chars.charAt(Math.floor(Math.random() * chars.length));
                 
-                // Occasional bright char
-                if(Math.random() > 0.98) {
-                    ctx.fillStyle = '#00ff41'; 
+                // BRIGHT GREEN PALETTE
+                if(Math.random() > 0.95) {
+                    ctx.fillStyle = '#e0ffe0'; // Almost white green
                 } else {
-                    ctx.fillStyle = '#1a4a2a';
+                    ctx.fillStyle = '#00ff41'; // Bright Matrix Green
                 }
                 
                 ctx.fillText(text, i * fontSize, drops[i] * fontSize);
                 
-                if(drops[i] * fontSize > canvas.height && Math.random() > 0.99) {
+                if(drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
                     drops[i] = 0;
                 }
                 drops[i]++;
             }
         }
-        setInterval(drawMatrix, 45); // Slower animation
+        setInterval(drawMatrix, 35); 
         window.addEventListener('resize', () => { 
             canvas.width = window.innerWidth; 
             canvas.height = window.innerHeight; 
             initDrops(); 
         });
 
-        // --- RESOURCE DATA (DeepSeek Removed & All Categories Restored) ---
+        // --- RESOURCE DATA (ALL RESTORED) ---
         const hubsData = [
             {
                 id: 'cyber',
@@ -702,7 +702,7 @@
             }
         ];
 
-        // --- COMMAND CENTER UI (TAB LAYOUT RESTORED & FIXED) ---
+        // --- COMMAND CENTER UI (FIXED TABS SCROLL) ---
         function initHubsUI() {
             const tabContainer = document.getElementById('hub-tabs');
             const contentArea = document.getElementById('hub-content-area');
@@ -711,7 +711,7 @@
             tabContainer.innerHTML = '';
             hubsData.forEach((hub, index) => {
                 const btn = document.createElement('button');
-                // UPDATED CLASS STRING FOR MOBILE FIX
+                // Ensures tabs are side-by-side on mobile, stacked on desktop
                 btn.className = `tab-btn w-auto md:w-full text-left px-6 py-4 text-xs font-mono uppercase tracking-widest text-gray-500 hover:bg-white/5 hover:text-white transition-all border-b-2 md:border-b-0 md:border-l-2 border-transparent flex items-center gap-3 shrink-0 whitespace-nowrap`;
                 if (index === 0) btn.classList.add('active');
                 btn.innerHTML = `<svg class="w-4 h-4 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${hub.icon}"></path></svg> ${hub.name}`;
