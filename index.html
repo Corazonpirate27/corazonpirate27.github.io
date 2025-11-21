@@ -2,50 +2,155 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ROOT | Open Source Intelligence Hub</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ROOT | Intelligence Hub</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600&family=Inter:wght@300;400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
+        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
+
+        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app';
+        
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        let currentUser = null;
+        let listenerUnsubscribe = null;
+
+        const initAuth = async () => {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (error) {
+                console.error("Auth Error:", error);
+            }
+        };
+        initAuth();
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUser = user;
+                setupRealtimeListener();
+            } else {
+                currentUser = null;
+                if (listenerUnsubscribe) listenerUnsubscribe();
+            }
+        });
+
+        function setupRealtimeListener() {
+            if (listenerUnsubscribe) return;
+            const signalsRef = collection(db, 'artifacts', appId, 'public', 'data', 'signals');
+            
+            listenerUnsubscribe = onSnapshot(signalsRef, (snapshot) => {
+                const feedContainer = document.getElementById('community-feed-container');
+                if(!feedContainer) return;
+
+                feedContainer.innerHTML = ''; 
+                let signals = [];
+                snapshot.forEach(doc => signals.push({ id: doc.id, ...doc.data() }));
+                signals.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
+
+                if (signals.length === 0) {
+                    feedContainer.innerHTML = `<div class="text-gray-600 italic text-xs p-4 text-center font-mono">No signals detected.</div>`;
+                    return;
+                }
+
+                signals.forEach(signal => {
+                    feedContainer.appendChild(createSignalCard(signal));
+                });
+            });
+        }
+
+        function createSignalCard(data) {
+            const div = document.createElement('div');
+            div.className = 'group flex flex-col gap-1 p-3 rounded bg-white/5 hover:bg-[#00ff41]/5 border border-transparent hover:border-[#00ff41]/20 transition-all duration-300';
+            
+            let badgeColor = 'text-green-400 bg-green-400/10';
+            if(data.difficulty === 'Intermediate') badgeColor = 'text-blue-400 bg-blue-400/10';
+            if(data.difficulty === 'Hard') badgeColor = 'text-orange-400 bg-orange-400/10';
+            if(data.difficulty === 'Expert') badgeColor = 'text-purple-400 bg-purple-400/10';
+
+            div.innerHTML = `
+                <div class="flex justify-between items-start">
+                    <span class="text-[10px] font-mono text-gray-500 uppercase tracking-wider">${data.category || 'SIGNAL'}</span>
+                    <span class="${badgeColor} px-1.5 py-0.5 rounded text-[9px] uppercase tracking-widest border border-current opacity-70">${data.difficulty || 'N/A'}</span>
+                </div>
+                <a href="${data.url}" target="_blank" class="text-sm text-gray-200 group-hover:text-[#00ff41] font-medium truncate transition-colors">
+                    ${data.title}
+                </a>
+            `;
+            return div;
+        }
+
+        window.submitSignal = async function(e) {
+            e.preventDefault();
+            if (!currentUser) return alert("Connecting...");
+
+            const submitBtn = document.getElementById('submitBtnText');
+            submitBtn.innerText = "TRANSMITTING...";
+
+            try {
+                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'signals'), {
+                    title: document.getElementById('inputTitle').value,
+                    url: document.getElementById('inputUrl').value,
+                    category: document.getElementById('inputCategory').value,
+                    difficulty: document.getElementById('inputDifficulty').value,
+                    timestamp: serverTimestamp(),
+                    agentId: currentUser.uid
+                });
+                toggleUploadModal();
+                document.getElementById('signalForm').reset();
+            } catch (error) {
+                alert("Transmission failed.");
+            } finally {
+                submitBtn.innerText = "TRANSMIT";
+            }
+        }
+        
+        window.toggleUploadModal = () => document.getElementById('uploadModal').classList.toggle('hidden');
+    </script>
+
     <script>
         tailwind.config = {
             theme: {
                 extend: {
                     fontFamily: {
-                        serif: ['Space Grotesk', 'sans-serif'],
                         sans: ['Inter', 'sans-serif'],
+                        serif: ['Space Grotesk', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
                     },
                     colors: {
-                        'glass': 'rgba(0, 0, 0, 0.4)', /* Darker glass for matrix contrast */
-                        'glass-border': 'rgba(0, 255, 65, 0.2)', /* Matrix Green border */
-                        'cyber-green': '#0F0',
+                        'root-green': '#00ff41',
+                        'root-dark': '#050505',
+                        'root-glass': 'rgba(10, 10, 10, 0.7)',
                     },
                     animation: {
-                        'spin-slow': 'spin 15s linear infinite',
-                        'float': 'float 8s ease-in-out infinite',
-                        'float-delayed': 'float 8s ease-in-out 4s infinite',
-                    },
-                    keyframes: {
-                        float: {
-                            '0%, 100%': { transform: 'translateY(0)' },
-                            '50%': { transform: 'translateY(-20px)' },
-                        }
+                        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
                     }
                 }
             }
         }
     </script>
     <style>
-        /* --- GLOBAL AESTHETICS --- */
         body {
             background-color: #000000;
             color: #e5e5e5;
             overflow-x: hidden;
-            cursor: none; /* Custom Cursor Active */
+            -webkit-tap-highlight-color: transparent;
         }
 
-        /* Matrix Canvas Background */
+        /* --- BRIGHTER MATRIX --- */
         #matrix-bg {
             position: fixed;
             top: 0;
@@ -54,699 +159,801 @@
             height: 100vh;
             z-index: -10;
             pointer-events: none;
+            opacity: 1.0; /* BRIGHTNESS MAXIMIZED */
         }
 
-        /* Glowing Orbs - Made more subtle for Matrix visibility */
-        .glow-orb {
-            position: fixed;
-            border-radius: 50%;
-            filter: blur(100px);
-            z-index: -2;
-            opacity: 0.15;
-        }
-        .orb-1 { top: -20%; left: -10%; width: 800px; height: 800px; background: radial-gradient(circle, #00ff41 0%, transparent 70%); animation: float 10s ease-in-out infinite; }
-        .orb-2 { bottom: -20%; right: -10%; width: 700px; height: 700px; background: radial-gradient(circle, #003b00 0%, transparent 70%); animation: float-delayed 12s ease-in-out infinite; }
-
-        /* Custom Cursor */
-        .cursor-dot,
-        .cursor-outline {
-            position: fixed;
-            top: 0;
-            left: 0;
-            transform: translate(-50%, -50%);
-            border-radius: 50%;
-            z-index: 9999;
-            pointer-events: none;
-        }
-        .cursor-dot {
-            width: 8px;
-            height: 8px;
-            background-color: #00ff41;
-            box-shadow: 0 0 10px #00ff41;
-        }
-        .cursor-outline {
-            width: 40px;
-            height: 40px;
-            border: 1px solid rgba(0, 255, 65, 0.5);
-            transition: width 0.2s, height 0.2s, background-color 0.2s;
-        }
-        /* Hover State for Cursor */
-        body.hovering .cursor-outline {
-            width: 60px;
-            height: 60px;
-            background-color: rgba(0, 255, 65, 0.1);
-            border-color: transparent;
-            backdrop-filter: blur(2px);
-        }
-
-        /* Scrollbar */
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: #0a0a0a; }
-        ::-webkit-scrollbar-thumb { background: #003300; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: #00ff41; }
-
-        /* Glassmorphism */
+        /* --- UI ELEMENTS --- */
         .glass-panel {
-            background: var(--glass);
-            backdrop-filter: blur(8px); /* Less blur to see code behind */
-            -webkit-backdrop-filter: blur(8px);
-            border: 1px solid var(--glass-border);
-            box-shadow: 0 4px 30px rgba(0, 255, 65, 0.05);
+            background: var(--root-glass);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(0, 255, 65, 0.1);
+            box-shadow: 0 0 0 1px rgba(0,0,0,0.5), 0 4px 20px rgba(0,0,0,0.8);
         }
 
-        /* Reveal Animation */
+        .hover-trigger:hover {
+            text-shadow: 0 0 8px rgba(0, 255, 65, 0.6);
+        }
+
+        /* Custom Scrollbar */
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #00ff41; }
+
         .reveal {
             opacity: 0;
-            transform: translateY(40px);
-            transition: all 1s cubic-bezier(0.2, 1, 0.3, 1);
+            transform: translateY(20px);
+            transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
         }
         .reveal.active {
             opacity: 1;
             transform: translateY(0);
         }
 
-        /* Mobile Menu Overlay */
-        #mobileMenu {
-            transition: transform 0.4s cubic-bezier(0.2, 1, 0.3, 1);
-            transform: translateX(100%);
-        }
-        #mobileMenu.open {
-            transform: translateX(0);
+        /* Tab Active State */
+        .tab-btn.active {
+            background: rgba(0, 255, 65, 0.05);
+            border-left-color: #00ff41;
+            color: #00ff41;
         }
 
-        /* Link List Styling */
-        .resource-link {
-            display: flex;
-            align-items: center;
-            padding: 0.75rem 0;
-            border-bottom: 1px solid rgba(0, 255, 65, 0.1);
-            transition: all 0.3s ease;
-        }
-        .resource-link:last-child { border-bottom: none; }
-        .resource-link:hover { padding-left: 1rem; border-color: #00ff41; }
-        .resource-link:hover span { color: #00ff41; text-shadow: 0 0 8px rgba(0, 255, 65, 0.5); }
-        
-        ::selection { background: #00ff41; color: black; }
+        ::selection { background: #003300; color: #00ff41; }
     </style>
 </head>
-<body class="font-sans antialiased selection:bg-emerald-500 selection:text-black">
+<body class="font-sans antialiased selection:bg-green-900 selection:text-green-400">
 
     <!-- Matrix Background -->
     <canvas id="matrix-bg"></canvas>
 
-    <!-- Custom Cursor Elements -->
-    <div class="cursor-dot"></div>
-    <div class="cursor-outline"></div>
-
-    <!-- Glow Orbs -->
-    <div class="glow-orb orb-1"></div>
-    <div class="glow-orb orb-2"></div>
-
     <!-- Navigation -->
-    <nav class="fixed w-full z-50 px-6 py-6 transition-all duration-300 mix-blend-difference" id="navbar">
-        <div class="max-w-7xl mx-auto flex justify-between items-center">
-            <a href="#" class="font-serif text-2xl tracking-widest font-bold text-[#00ff41] hover-trigger drop-shadow-[0_0_10px_rgba(0,255,65,0.8)]">ROOT.</a>
+    <nav class="fixed w-full z-50 border-b border-white/5 bg-black/80 backdrop-blur-md transition-all duration-300">
+        <div class="max-w-7xl mx-auto px-6 h-16 flex justify-between items-center">
+            <a href="#" class="font-serif text-xl font-bold tracking-wider text-white hover:text-[#00ff41] transition-colors flex items-center gap-2">
+                <div class="w-2 h-2 bg-[#00ff41] rounded-full animate-pulse-slow"></div>
+                ROOT.
+            </a>
             
             <!-- Desktop Menu -->
-            <div class="hidden md:flex space-x-10 text-xs tracking-[0.2em] uppercase font-medium text-white">
-                <a href="#hubs" class="hover:text-[#00ff41] transition-colors hover-trigger">Hubs</a>
-                <a href="#mission" class="hover:text-[#00ff41] transition-colors hover-trigger">Mission</a>
-                <a href="#contact" class="hover:text-[#00ff41] transition-colors hover-trigger">Join</a>
+            <div class="hidden md:flex items-center space-x-8 text-[11px] uppercase tracking-[0.15em] font-medium text-gray-400">
+                <a href="#command" class="hover:text-white transition-colors">Command Center</a>
+                <a href="#streams" class="hover:text-white transition-colors">Live Streams</a>
+                <a href="#tools" class="hover:text-white transition-colors">Field Tools</a>
+                
+                <div class="h-4 w-px bg-white/10"></div>
+
+                <button onclick="toggleNeuralTerminal()" class="text-[#00ff41] hover:text-white transition-colors flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                    AI Uplink
+                </button>
+
+                <button onclick="toggleUploadModal()" class="border border-white/20 hover:border-[#00ff41] hover:text-[#00ff41] px-4 py-1.5 rounded transition-all">
+                    + Signal
+                </button>
             </div>
 
             <!-- Mobile Menu Button -->
-            <button id="menuBtn" class="md:hidden text-white uppercase tracking-widest text-xs hover-trigger">MENU</button>
+            <button id="menuBtn" class="md:hidden text-[#00ff41]">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
+            </button>
         </div>
     </nav>
 
     <!-- Mobile Menu Overlay -->
-    <div id="mobileMenu" class="fixed inset-0 z-40 bg-black/95 backdrop-blur-xl flex flex-col justify-center items-center space-y-8">
-        <button id="closeMenuBtn" class="absolute top-8 right-8 text-white/50 hover:text-white text-2xl hover-trigger">&times;</button>
-        <a href="#hubs" class="text-3xl font-serif text-white hover:text-[#00ff41] transition-colors hover-trigger mobile-link">Hubs</a>
-        <a href="#mission" class="text-3xl font-serif text-white hover:text-[#00ff41] transition-colors hover-trigger mobile-link">Mission</a>
-        <a href="#contact" class="text-3xl font-serif text-white hover:text-[#00ff41] transition-colors hover-trigger mobile-link">Join</a>
+    <div id="mobileMenu" class="fixed inset-0 z-40 bg-black/95 backdrop-blur-xl flex flex-col justify-center items-center space-y-8 touch-none translate-x-full transition-transform duration-300">
+        <button id="closeMenuBtn" class="absolute top-6 right-6 p-4 text-white/50 hover:text-white text-3xl">&times;</button>
+        <a href="#command" onclick="toggleMenu()" class="text-2xl font-serif text-white hover:text-[#00ff41]">Command Center</a>
+        <a href="#streams" onclick="toggleMenu()" class="text-2xl font-serif text-white hover:text-[#00ff41]">Live Streams</a>
+        <a href="#tools" onclick="toggleMenu()" class="text-2xl font-serif text-white hover:text-[#00ff41]">Field Tools</a>
+        <button onclick="toggleNeuralTerminal(); toggleMenu()" class="text-2xl font-serif text-[#00ff41]">Neural Link</button>
     </div>
 
     <!-- Hero Section -->
-    <section class="min-h-screen flex flex-col justify-center items-center relative px-4 pt-20">
-        <div class="text-center z-10">
-            <p class="reveal text-[#00ff41] tracking-[0.4em] text-xs uppercase mb-8 font-bold drop-shadow-[0_0_5px_rgba(0,255,65,0.8)]">Curated Internet Intelligence</p>
-            <h1 class="reveal text-5xl md:text-7xl lg:text-9xl font-serif font-medium leading-[1.1] mb-10 text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)]">
-                Signal. <br> <span class="italic font-light text-gray-400">Not Noise.</span>
-            </h1>
-            <p class="reveal text-gray-300 max-w-lg mx-auto leading-relaxed text-lg font-light drop-shadow-md">
-                We filter the chaos of the internet. 
-                Access the Top 5 verified open-source resources for the world's 10 most critical tech domains.
-                <br><span class="text-[#00ff41]/80 mt-4 block text-sm tracking-widest uppercase">Free Access • Updated Daily</span>
-            </p>
-        </div>
-        
-        <div class="absolute bottom-12 left-1/2 -translate-x-1/2 reveal animate-bounce">
-            <svg class="w-6 h-6 text-[#00ff41]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path></svg>
-        </div>
-    </section>
-
-    <!-- Resource Hubs Section -->
-    <section id="hubs" class="py-32 px-6">
-        <div class="max-w-7xl mx-auto">
-            <div class="flex justify-between items-end mb-24 reveal">
-                <h2 class="text-4xl md:text-6xl font-serif text-white">Intelligence Hubs</h2>
-                <span class="text-[#00ff41] hidden md:block tracking-widest text-sm">Select Protocol</span>
+    <section class="min-h-[80vh] flex flex-col justify-center items-center relative px-4 pt-20">
+        <div class="text-center z-10 w-full max-w-3xl space-y-6">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[#00ff41]/20 bg-[#00ff41]/5 text-[#00ff41] text-[10px] uppercase tracking-widest font-mono mb-4 reveal">
+                <span class="w-1 h-1 bg-[#00ff41] rounded-full animate-pulse"></span>
+                System Online v2.1
             </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-12 lg:gap-16">
-                
-                <!-- 1. Cybersecurity -->
-                <div class="glass-panel p-8 rounded-2xl reveal border border-[#00ff41]/20 hover:border-[#00ff41] transition-colors duration-500 group">
-                    <div class="flex items-center justify-between mb-8">
-                        <h3 class="text-3xl font-serif text-white group-hover:text-[#00ff41] transition-colors">Cybersecurity</h3>
-                        <div class="w-10 h-10 bg-[#00ff41]/10 rounded-full flex items-center justify-center text-[#00ff41] border border-[#00ff41]/20">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
-                        </div>
-                    </div>
-                    <div class="space-y-1">
-                        <a href="https://roadmap.sh/cyber-security" target="_blank" class="resource-link hover-trigger">
-                            <span class="text-gray-400 text-sm">01. Roadmap.sh</span>
-                            <span class="ml-auto text-xs text-gray-500 group-hover:text-[#00ff41] uppercase tracking-widest">Map</span>
-                        </a>
-                        <a href="https://tryhackme.com/" target="_blank" class="resource-link hover-trigger">
-                            <span class="text-gray-400 text-sm">02. TryHackMe</span>
-                            <span class="ml-auto text-xs text-gray-500 group-hover:text-[#00ff41] uppercase tracking-widest">Labs</span>
-                        </a>
-                        <a href="https://www.hackthebox.com/" target="_blank" class="resource-link hover-trigger">
-                            <span class="text-gray-400 text-sm">03. HackTheBox</span>
-                            <span class="ml-auto text-xs text-gray-500 group-hover:text-[#00ff41] uppercase tracking-widest">Advanced</span>
-                        </a>
-                        <a href="https://portswigger.net/web-security" target="_blank" class="resource-link hover-trigger">
-                            <span class="text-gray-400 text-sm">04. PortSwigger Academy</span>
-                            <span class="ml-auto text-xs text-gray-500 group-hover:text-[#00ff41] uppercase tracking-widest">Web</span>
-                        </a>
-                        <a href="https://github.com/enaqx/awesome-pentest" target="_blank" class="resource-link hover-trigger">
-                            <span class="text-gray-400 text-sm">05. Awesome Pentest</span>
-                            <span class="ml-auto text-xs text-gray-500 group-hover:text-[#00ff41] uppercase tracking-widest">Repo</span>
-                        </a>
-                    </div>
-                </div>
-
-                <!-- 2. Data Analytics -->
-                <div class="glass-panel p-8 rounded-2xl reveal border border-[#00ff41]/20 hover:border-[#00ff41] transition-colors duration-500 md:mt-16 group">
-                    <div class="flex items-center justify-between mb-8">
-                        <h3 class="text-3xl font-serif text-white group-hover:text-[#00ff41] transition-colors">Data Analytics</h3>
-                        <div class="w-10 h-10 bg-[#00ff41]/10 rounded-full flex items-center justify-center text-[#00ff41] border border-[#00ff41]/20">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
-                        </div>
-                    </div>
-                    <div class="space-y-1">
-                        <a href="https://www.kaggle.com/learn" target="_blank" class="resource-link hover-trigger">
-                            <span class="text-gray-400 text-sm">01. Kaggle Learn</span>
-                            <span class="ml-auto text-xs text-gray-500 group-hover:text-[#00ff41] uppercase tracking-widest">Practice</span>
-                        </a>
-                        <a href="https://github.com/ossu/data-science" target="_blank" class="resource-link hover-trigger">
-                            <span class="text-gray-400 text-sm">02. OSSU Data Science</span>
-                            <span class="ml-auto text-xs text-gray-500 group-hover:text-[#00ff41] uppercase tracking-widest">Degree</span>
-                        </a>
-                        <a href="https://www.freecodecamp.org/learn/data-analysis-with-python/" target="_blank" class="resource-link hover-trigger">
-                            <span class="text-gray-400 text-sm">03. FreeCodeCamp</span>
-                            <span class="ml-auto text-xs text-gray-500 group-hover:text-[#00ff41] uppercase tracking-widest">Python</span>
-                        </a>
-                        <a href="https://mode.com/sql-tutorial/" target="_blank" class="resource-link hover-trigger">
-                            <span class="text-gray-400 text-sm">04. Mode SQL</span>
-                            <span class="ml-auto text-xs text-gray-500 group-hover:text-[#00ff41] uppercase tracking-widest">SQL</span>
-                        </a>
-                        <a href="https://pandas.pydata.org/docs/" target="_blank" class="resource-link hover-trigger">
-                            <span class="text-gray-400 text-sm">05. Pandas Docs</span>
-                            <span class="ml-auto text-xs text-gray-500 group-hover:text-[#00ff41] uppercase tracking-widest">Manual</span>
-                        </a>
-                    </div>
-                </div>
-
-                <!-- 3. AI & ML -->
-                <div class="glass-panel p-8 rounded-2xl reveal border border-[#00ff41]/20 hover:border-[#00ff41] transition-colors duration-500 group">
-                    <div class="flex items-center justify-between mb-8">
-                        <h3 class="text-3xl font-serif text-white group-hover:text-[#00ff41] transition-colors">AI & ML</h3>
-                        <div class="w-10 h-10 bg-[#00ff41]/10 rounded-full flex items-center justify-center text-[#00ff41] border border-[#00ff41]/20">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.384-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
-                        </div>
-                    </div>
-                    <div class="space-y-1">
-                        <a href="https://course.fast.ai/" target="_blank" class="resource-link hover-trigger">
-                            <span class="text-gray-400 text-sm">01. Fast.ai</span>
-                            <span class="ml-auto text-xs text-gray-500 group-hover:text-[#00ff41] uppercase tracking-widest">Deep Learn</span>
-                        </a>
-                        <a href="https://huggingface.co/learn" target="_blank" class="resource-link hover-trigger">
-                            <span class="text-gray-400 text-sm">02. Hugging Face</span>
-                            <span class="ml-auto text-xs text-gray-500 group-hover:text-[#00ff41] uppercase tracking-widest">NLP</span>
-                        </a>
-                        <a href="https://developers.google.com/machine-learning/crash-course" target="_blank" class="resource-link hover-trigger">
-                            <span class="text-gray-400 text-sm">03. Google ML</span>
-                            <span class="ml-auto text-xs text-gray-500 group-hover:text-[#00ff41] uppercase tracking-widest">Basics</span>
-                        </a>
-                        <a href="https://cs231n.stanford.edu/" target="_blank" class="resource-link hover-trigger">
-                            <span class="text-gray-400 text-sm">04. Stanford CS231n</span>
-                            <span class="ml-auto text-xs text-gray-500 group-hover:text-[#00ff41] uppercase tracking-widest">Vision</span>
-                        </a>
-                        <a href="https://github.com/openai/openai-cookbook" target="_blank" class="resource-link hover-trigger">
-                            <span class="text-gray-400 text-sm">05. OpenAI Cookbook</span>
-                            <span class="ml-auto text-xs text-gray-500 group-hover:text-[#00ff41] uppercase tracking-widest">Generative</span>
-                        </a>
-                    </div>
-                </div>
-
-                <!-- 4. DevOps & Cloud -->
-                <div class="glass-panel p-8 rounded-2xl reveal border border-[#00ff41]/20 hover:border-[#00ff41] transition-colors duration-500 md:mt-16 group">
-                    <div class="flex items-center justify-between mb-8">
-                        <h3 class="text-3xl font-serif text-white group-hover:text-[#00ff41] transition-colors">DevOps & Cloud</h3>
-                        <div class="w-10 h-10 bg-[#00ff41]/10 rounded-full flex items-center justify-center text-[#00ff41] border border-[#00ff41]/20">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"></path></svg>
-                        </div>
-                    </div>
-                    <div class="space-y-1">
-                        <a href="https://roadmap.sh/devops" target="_blank" class="resource-link hover-trigger">
-                            <span class="text-gray-400 text-sm">01. Roadmap.sh</span>
-                            <span class="ml-auto text-xs text-gray-500 group-hover:text-[#00ff41] uppercase tracking-widest">The Path</span>
-                        </a>
-                        <a href="https://labs.play-with-docker.com/" target="_blank" class="resource-link hover-trigger">
-                            <span class="text-gray-400 text-sm">02. Docker Labs</span>
-                            <span class="ml-auto text-xs text-gray-500 group-hover:text-[#00ff41] uppercase tracking-widest">Containers</span>
-                        </a>
-                        <a href="https://kubernetes.io/docs/tutorials/" target="_blank" class="resource-link hover-trigger">
-                            <span class="text-gray-400 text-sm">03. Kubernetes.io</span>
-                            <span class="ml-auto text-xs text-gray-500 group-hover:text-[#00ff41] uppercase tracking-widest">K8s</span>
-                        </a>
-                        <a href="https://learn.microsoft.com/en-us/training/azure/" target="_blank" class="resource-link hover-trigger">
-                            <span class="text-gray-400 text-sm">04. MS Learn Azure</span>
-                            <span class="ml-auto text-xs text-gray-500 group-hover:text-[#00ff41] uppercase tracking-widest">Cloud</span>
-                        </a>
-                        <a href="https://12factor.net/" target="_blank" class="resource-link hover-trigger">
-                            <span class="text-gray-400 text-sm">05. 12-Factor App</span>
-                            <span class="ml-auto text-xs text-gray-500 group-hover:text-[#00ff41] uppercase tracking-widest">Theory</span>
-                        </a>
-                    </div>
-                </div>
-
-                <!-- 5. Full Stack Web -->
-                <div class="glass-panel p-8 rounded-2xl reveal border border-[#00ff41]/20 hover:border-[#00ff41] transition-colors duration-500 group">
-                    <div class="flex items-center justify-between mb-8">
-                        <h3 class="text-3xl font-serif text-white group-hover:text-[#00ff41] transition-colors">Full Stack Web</h3>
-                        <div class="w-10 h-10 bg-[#00ff41]/10 rounded-full flex items-center justify-center text-[#00ff41] border border-[#00ff41]/20">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
-                        </div>
-                    </div>
-                    <div class="space-y-1">
-                        <a href="https://www.theodinproject.com/" target="_blank" class="resource-link hover-trigger">
-                            <span class="text-gray-400 text-sm">01. The Odin Project</span>
-                            <span class="ml-auto text-xs text-gray-500 group-hover:text-[#00ff41] uppercase tracking-widest">Complete</span>
-                        </a>
-                        <a href="https://fullstackopen.com/en/" target="_blank" class="resource-link hover-trigger">
-                            <span class="text-gray-400 text-sm">02. Full Stack Open</span>
-                            <span class="ml-auto text-xs text-gray-500 group-hover:text-[#00ff41] uppercase tracking-widest">Modern</span>
-                        </a>
-                        <a href="https://developer.mozilla.org/en-US/" target="_blank" class="resource-link hover-trigger">
-                            <span class="text-gray-400 text-sm">03. MDN Web Docs</span>
-                            <span class="ml-auto text-xs text-gray-500 group-hover:text-[#00ff41] uppercase tracking-widest">Bible</span>
-                        </a>
-                        <a href="https://cs50.harvard.edu/web/" target="_blank" class="resource-link hover-trigger">
-                            <span class="text-gray-400 text-sm">04. CS50 Web</span>
-                            <span class="ml-auto text-xs text-gray-500 group-hover:text-[#00ff41] uppercase tracking-widest">Harvard</span>
-                        </a>
-                        <a href="https://javascript.info/" target="_blank" class="resource-link hover-trigger">
-                            <span class="text-gray-400 text-sm">05. Javascript.info</span>
-                            <span class="ml-auto text-xs text-gray-500 group-hover:text-[#00ff41] uppercase tracking-widest">Deep Dive</span>
-                        </a>
-                    </div>
-                </div>
-
-                <!-- 6. Mobile Development -->
-                <div class="glass-panel p-8 rounded-2xl reveal border border-[#00ff41]/20 hover:border-[#00ff41] transition-colors duration-500 md:mt-16 group">
-                    <div class="flex items-center justify-between mb-8">
-                        <h3 class="text-3xl font-serif text-white group-hover:text-[#00ff41] transition-colors">Mobile Dev</h3>
-                        <div class="w-10 h-10 bg-[#00ff41]/10 rounded-full flex items-center justify-center text-[#00ff41] border border-[#00ff41]/20">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
-                        </div>
-                    </div>
-                    <div class="space-y-1">
-                        <a href="https://developer.android.com/courses" target="_blank" class="resource-link hover-trigger">
-                            <span class="text-gray-400 text-sm">01. Android Developers</span>
-                            <span class="ml-auto text-xs text-gray-500 group-hover:text-[#00ff41] uppercase tracking-widest">Google</span>
-                        </a>
-                        <a href="https://docs.flutter.dev/" target="_blank" class="resource-link hover-trigger">
-                            <span class="text-gray-400 text-sm">02. Flutter Docs</span>
-                            <span class="ml-auto text-xs text-gray-500 group-hover:text-[#00ff41] uppercase tracking-widest">Cross-Plat</span>
-                        </a>
-                        <a href="https://reactnative.dev/docs/getting-started" target="_blank" class="resource-link hover-trigger">
-                            <span class="text-gray-400 text-sm">03. React Native</span>
-                            <span class="ml-auto text-xs text-gray-500 group-hover:text-[#00ff41] uppercase tracking-widest">JS Based</span>
-                        </a>
-                        <a href="https://cs193p.sites.stanford.edu/" target="_blank" class="resource-link hover-trigger">
-                            <span class="text-gray-400 text-sm">04. Stanford iOS</span>
-                            <span class="ml-auto text-xs text-gray-500 group-hover:text-[#00ff41] uppercase tracking-widest">Swift</span>
-                        </a>
-                        <a href="https://kotlinlang.org/docs/home.html" target="_blank" class="resource-link hover-trigger">
-                            <span class="text-gray-400 text-sm">05. Kotlin Docs</span>
-                            <span class="ml-auto text-xs text-gray-500 group-hover:text-[#00ff41] uppercase tracking-widest">Language</span>
-                        </a>
-                    </div>
-                </div>
-
-                <!-- 7. Blockchain & Web3 -->
-                <div class="glass-panel p-8 rounded-2xl reveal border border-[#00ff41]/20 hover:border-[#00ff41] transition-colors duration-500 group">
-                    <div class="flex items-center justify-between mb-8">
-                        <h3 class="text-3xl font-serif text-white group-hover:text-[#00ff41] transition-colors">Blockchain</h3>
-                        <div class="w-10 h-10 bg-[#00ff41]/10 rounded-full flex items-center justify-center text-[#00ff41] border border-[#00ff41]/20">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                        </div>
-                    </div>
-                    <div class="space-y-1">
-                        <a href="https://cryptozombies.io/" target="_blank" class="resource-link hover-trigger">
-                            <span class="text-gray-400 text-sm">01. CryptoZombies</span>
-                            <span class="ml-auto text-xs text-gray-500 group-hover:text-[#00ff41] uppercase tracking-widest">Gamified</span>
-                        </a>
-                        <a href="https://docs.soliditylang.org/" target="_blank" class="resource-link hover-trigger">
-                            <span class="text-gray-400 text-sm">02. Solidity Docs</span>
-                            <span class="ml-auto text-xs text-gray-500 group-hover:text-[#00ff41] uppercase tracking-widest">Smart K</span>
-                        </a>
-                        <a href="https://ethereum.org/en/developers/" target="_blank" class="resource-link hover-trigger">
-                            <span class="text-gray-400 text-sm">03. Ethereum.org</span>
-                            <span class="ml-auto text-xs text-gray-500 group-hover:text-[#00ff41] uppercase tracking-widest">Official</span>
-                        </a>
-                        <a href="https://useweb3.xyz/" target="_blank" class="resource-link hover-trigger">
-                            <span class="text-gray-400 text-sm">04. useWeb3</span>
-                            <span class="ml-auto text-xs text-gray-500 group-hover:text-[#00ff41] uppercase tracking-widest">Library</span>
-                        </a>
-                        <a href="https://whiteboardcrypto.com/" target="_blank" class="resource-link hover-trigger">
-                            <span class="text-gray-400 text-sm">05. Whiteboard Crypto</span>
-                            <span class="ml-auto text-xs text-gray-500 group-hover:text-[#00ff41] uppercase tracking-widest">Concepts</span>
-                        </a>
-                    </div>
-                </div>
-
-                <!-- 8. Game Development -->
-                <div class="glass-panel p-8 rounded-2xl reveal border border-[#00ff41]/20 hover:border-[#00ff41] transition-colors duration-500 md:mt-16 group">
-                    <div class="flex items-center justify-between mb-8">
-                        <h3 class="text-3xl font-serif text-white group-hover:text-[#00ff41] transition-colors">Game Dev</h3>
-                        <div class="w-10 h-10 bg-[#00ff41]/10 rounded-full flex items-center justify-center text-[#00ff41] border border-[#00ff41]/20">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                        </div>
-                    </div>
-                    <div class="space-y-1">
-                        <a href="https://docs.godotengine.org/en/stable/" target="_blank" class="resource-link hover-trigger">
-                            <span class="text-gray-400 text-sm">01. Godot Docs</span>
-                            <span class="ml-auto text-xs text-gray-500 group-hover:text-[#00ff41] uppercase tracking-widest">Open Src</span>
-                        </a>
-                        <a href="https://learn.unity.com/" target="_blank" class="resource-link hover-trigger">
-                            <span class="text-gray-400 text-sm">02. Unity Learn</span>
-                            <span class="ml-auto text-xs text-gray-500 group-hover:text-[#00ff41] uppercase tracking-widest">Standard</span>
-                        </a>
-                        <a href="https://dev.epicgames.com/community/learning" target="_blank" class="resource-link hover-trigger">
-                            <span class="text-gray-400 text-sm">03. Unreal Academy</span>
-                            <span class="ml-auto text-xs text-gray-500 group-hover:text-[#00ff41] uppercase tracking-widest">AAA</span>
-                        </a>
-                        <a href="https://gamemath.com/" target="_blank" class="resource-link hover-trigger">
-                            <span class="text-gray-400 text-sm">04. Game Math</span>
-                            <span class="ml-auto text-xs text-gray-500 group-hover:text-[#00ff41] uppercase tracking-widest">Physics</span>
-                        </a>
-                        <a href="https://blender.org/support/tutorials" target="_blank" class="resource-link hover-trigger">
-                            <span class="text-gray-400 text-sm">05. Blender</span>
-                            <span class="ml-auto text-xs text-gray-500 group-hover:text-[#00ff41] uppercase tracking-widest">3D Art</span>
-                        </a>
-                    </div>
-                </div>
-
-                <!-- 9. UI/UX Design -->
-                <div class="glass-panel p-8 rounded-2xl reveal border border-[#00ff41]/20 hover:border-[#00ff41] transition-colors duration-500 group">
-                    <div class="flex items-center justify-between mb-8">
-                        <h3 class="text-3xl font-serif text-white group-hover:text-[#00ff41] transition-colors">UI/UX Design</h3>
-                        <div class="w-10 h-10 bg-[#00ff41]/10 rounded-full flex items-center justify-center text-[#00ff41] border border-[#00ff41]/20">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"></path></svg>
-                        </div>
-                    </div>
-                    <div class="space-y-1">
-                        <a href="https://www.figma.com/community" target="_blank" class="resource-link hover-trigger">
-                            <span class="text-gray-400 text-sm">01. Figma Community</span>
-                            <span class="ml-auto text-xs text-gray-500 group-hover:text-[#00ff41] uppercase tracking-widest">Assets</span>
-                        </a>
-                        <a href="https://lawsofux.com/" target="_blank" class="resource-link hover-trigger">
-                            <span class="text-gray-400 text-sm">02. Laws of UX</span>
-                            <span class="ml-auto text-xs text-gray-500 group-hover:text-[#00ff41] uppercase tracking-widest">Theory</span>
-                        </a>
-                        <a href="https://m3.material.io/" target="_blank" class="resource-link hover-trigger">
-                            <span class="text-gray-400 text-sm">03. Material Design</span>
-                            <span class="ml-auto text-xs text-gray-500 group-hover:text-[#00ff41] uppercase tracking-widest">System</span>
-                        </a>
-                        <a href="https://www.nngroup.com/articles/" target="_blank" class="resource-link hover-trigger">
-                            <span class="text-gray-400 text-sm">04. Nielsen Norman</span>
-                            <span class="ml-auto text-xs text-gray-500 group-hover:text-[#00ff41] uppercase tracking-widest">Research</span>
-                        </a>
-                        <a href="https://www.checklist.design/" target="_blank" class="resource-link hover-trigger">
-                            <span class="text-gray-400 text-sm">05. Checklist.Design</span>
-                            <span class="ml-auto text-xs text-gray-500 group-hover:text-[#00ff41] uppercase tracking-widest">Process</span>
-                        </a>
-                    </div>
-                </div>
-
-                <!-- 10. IoT & Embedded -->
-                <div class="glass-panel p-8 rounded-2xl reveal border border-[#00ff41]/20 hover:border-[#00ff41] transition-colors duration-500 md:mt-16 group">
-                    <div class="flex items-center justify-between mb-8">
-                        <h3 class="text-3xl font-serif text-white group-hover:text-[#00ff41] transition-colors">IoT & Embedded</h3>
-                        <div class="w-10 h-10 bg-[#00ff41]/10 rounded-full flex items-center justify-center text-[#00ff41] border border-[#00ff41]/20">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"></path></svg>
-                        </div>
-                    </div>
-                    <div class="space-y-1">
-                        <a href="https://docs.arduino.cc/" target="_blank" class="resource-link hover-trigger">
-                            <span class="text-gray-400 text-sm">01. Arduino Docs</span>
-                            <span class="ml-auto text-xs text-gray-500 group-hover:text-[#00ff41] uppercase tracking-widest">Start</span>
-                        </a>
-                        <a href="https://projects.raspberrypi.org/en" target="_blank" class="resource-link hover-trigger">
-                            <span class="text-gray-400 text-sm">02. Raspberry Pi</span>
-                            <span class="ml-auto text-xs text-gray-500 group-hover:text-[#00ff41] uppercase tracking-widest">Projects</span>
-                        </a>
-                        <a href="https://www.espressif.com/en/support/documents/technical-documents" target="_blank" class="resource-link hover-trigger">
-                            <span class="text-gray-400 text-sm">03. ESP32 Docs</span>
-                            <span class="ml-auto text-xs text-gray-500 group-hover:text-[#00ff41] uppercase tracking-widest">WiFi</span>
-                        </a>
-                        <a href="https://www.hackster.io/" target="_blank" class="resource-link hover-trigger">
-                            <span class="text-gray-400 text-sm">04. Hackster.io</span>
-                            <span class="ml-auto text-xs text-gray-500 group-hover:text-[#00ff41] uppercase tracking-widest">Community</span>
-                        </a>
-                        <a href="https://learn.adafruit.com/" target="_blank" class="resource-link hover-trigger">
-                            <span class="text-gray-400 text-sm">05. Adafruit Learn</span>
-                            <span class="ml-auto text-xs text-gray-500 group-hover:text-[#00ff41] uppercase tracking-widest">Guides</span>
-                        </a>
-                    </div>
-                </div>
-
-            </div>
-        </div>
-    </section>
-
-    <!-- Mission / Method -->
-    <section id="mission" class="py-32 px-6 relative">
-        <div class="max-w-5xl mx-auto reveal">
-            <div class="glass-panel rounded-3xl p-10 md:p-20 relative overflow-hidden border-2 border-[#00ff41]/30">
-                <div class="absolute top-0 right-0 w-96 h-96 bg-[#00ff41]/10 blur-[100px] rounded-full pointer-events-none"></div>
-
-                <span class="text-[#00ff41] uppercase tracking-widest text-xs font-bold mb-6 block">Core Mission</span>
-                <h2 class="text-3xl md:text-5xl font-serif mb-16 leading-tight max-w-3xl text-white">
-                    The internet is full of noise. We provide the map.
-                </h2>
-
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-12">
-                    <div>
-                        <h4 class="text-lg mb-6 text-white font-serif">Aggregated Knowledge</h4>
-                        <ul class="space-y-4 text-gray-400 font-light text-sm tracking-wide">
-                            <li class="border-l border-[#00ff41]/20 pl-4 hover:text-[#00ff41] hover:border-[#00ff41] transition-colors cursor-default">Centralized Links</li>
-                            <li class="border-l border-[#00ff41]/20 pl-4 hover:text-[#00ff41] hover:border-[#00ff41] transition-colors cursor-default">Quality Verification</li>
-                        </ul>
-                    </div>
-                    <div>
-                        <h4 class="text-lg mb-6 text-white font-serif">Agent Philosophy</h4>
-                        <ul class="space-y-4 text-gray-400 font-light text-sm tracking-wide">
-                            <li class="border-l border-[#00ff41]/20 pl-4 hover:text-[#00ff41] hover:border-[#00ff41] transition-colors cursor-default">Self-Directed Learning</li>
-                            <li class="border-l border-[#00ff41]/20 pl-4 hover:text-[#00ff41] hover:border-[#00ff41] transition-colors cursor-default">Open Source First</li>
-                        </ul>
-                    </div>
-                    <div>
-                        <h4 class="text-lg mb-6 text-white font-serif">Zero Bloat</h4>
-                        <ul class="space-y-4 text-gray-400 font-light text-sm tracking-wide">
-                            <li class="border-l border-[#00ff41]/20 pl-4 hover:text-[#00ff41] hover:border-[#00ff41] transition-colors cursor-default">No Paywalls</li>
-                            <li class="border-l border-[#00ff41]/20 pl-4 hover:text-[#00ff41] hover:border-[#00ff41] transition-colors cursor-default">Direct Access</li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Contact Section -->
-    <section id="contact" class="py-32 px-6 min-h-screen flex flex-col justify-center">
-        <div class="max-w-6xl mx-auto w-full grid grid-cols-1 lg:grid-cols-2 gap-20 items-start">
             
-            <!-- Left: Text -->
-            <div class="reveal sticky top-32">
-                <h2 class="text-6xl md:text-8xl font-serif mb-8 text-white">Join the Network.</h2>
-                <p class="text-xl text-gray-400 font-light mb-12 max-w-md leading-relaxed">
-                    Become an agent of open intelligence. Join our Discord to share resources and collaborate on projects.
-                </p>
-                <a href="mailto:network@root.io" class="text-2xl border-b border-gray-700 pb-2 hover:text-[#00ff41] hover:border-[#00ff41] transition-colors hover-trigger inline-block text-white">network@root.io</a>
-                
-                <div class="mt-24 text-xs text-gray-500 flex space-x-8 uppercase tracking-[0.2em]">
-                    <a href="#" class="hover:text-[#00ff41] transition-colors hover-trigger">GitHub</a>
-                    <a href="#" class="hover:text-[#00ff41] transition-colors hover-trigger">Discord</a>
-                    <a href="#" class="hover:text-[#00ff41] transition-colors hover-trigger">Signal</a>
+            <h1 class="reveal text-5xl md:text-7xl font-serif font-medium leading-tight text-white">
+                Signal. <span class="text-gray-600">Not Noise.</span>
+            </h1>
+            
+            <p class="reveal text-gray-400 text-lg font-light max-w-lg mx-auto leading-relaxed">
+                The definitive open-source intelligence index. Verified protocols for the modern web.
+            </p>
+
+            <!-- Minimal Search -->
+            <div class="reveal w-full max-w-md mx-auto relative mt-8">
+                <input type="text" id="searchInput" placeholder="Search index (e.g. 'Python', 'Zero Knowledge')..." 
+                    class="w-full bg-white/5 border border-white/10 text-white pl-4 pr-12 py-4 rounded-lg focus:outline-none focus:border-[#00ff41]/50 focus:bg-black transition-all font-mono text-sm placeholder-gray-600">
+                <div class="absolute right-4 top-4 text-gray-600">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- COMMAND CENTER (TAB LAYOUT RESTORED) -->
+    <section id="command" class="py-20 px-6 max-w-7xl mx-auto">
+        <div class="flex items-end justify-between mb-8 reveal">
+            <h2 class="text-3xl font-serif text-white">Command Center</h2>
+            <span class="text-gray-500 text-xs font-mono uppercase tracking-widest hidden md:block">Protocol Index</span>
+        </div>
+
+        <div class="glass-panel rounded-xl flex flex-col md:flex-row min-h-[600px] overflow-hidden reveal">
+            <!-- Sidebar Tabs -->
+            <div class="w-full md:w-64 border-b md:border-b-0 md:border-r border-white/10 bg-black/20 flex flex-row md:flex-col overflow-x-auto md:overflow-y-auto custom-scrollbar" id="hub-tabs">
+                <!-- JS Injected -->
+            </div>
+
+            <!-- Content Area -->
+            <div class="flex-1 p-6 md:p-10 relative bg-black/40">
+                <div id="hub-content-area" class="relative z-10 h-full flex flex-col transition-opacity duration-300">
+                    <div class="flex-1 flex items-center justify-center text-gray-600 font-mono text-xs animate-pulse">
+                        LOADING PROTOCOLS...
+                    </div>
+                </div>
+                <!-- Subtle grid pattern overlay -->
+                <div class="absolute inset-0 opacity-[0.03]" style="background-image: radial-gradient(#fff 1px, transparent 1px); background-size: 20px 20px;"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- LIVE STREAMS -->
+    <section id="streams" class="py-10 px-6 max-w-7xl mx-auto">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            
+            <!-- COL 1: Global Wire (News) -->
+            <div class="reveal">
+                <div class="flex items-center justify-between mb-6 border-b border-white/10 pb-2">
+                    <h3 class="text-xl font-serif text-white flex items-center gap-2">
+                        <span class="w-2 h-2 bg-blue-500 rounded-full"></span> Global Wire
+                    </h3>
+                    <button onclick="fetchTechNews()" class="text-gray-500 hover:text-white text-xs uppercase tracking-widest font-mono">Refresh</button>
+                </div>
+                <div class="glass-panel rounded-xl p-1 min-h-[300px] max-h-[400px] overflow-y-auto custom-scrollbar">
+                    <div id="tech-news-container" class="space-y-1">
+                        <div class="p-8 text-center text-gray-600 font-mono text-xs">Connecting to global feed...</div>
+                    </div>
                 </div>
             </div>
 
-            <!-- Right: Discord Card -->
-            <div class="reveal delay-100 w-full">
-                <div class="glass-panel p-1 rounded-2xl border border-[#00ff41]/30">
-                    <div class="bg-black/60 rounded-xl p-8 md:p-10 border border-[#00ff41]/10 flex flex-col items-center text-center justify-center h-[400px]">
-                        
-                        <div class="w-20 h-20 rounded-full bg-[#00ff41]/10 flex items-center justify-center mb-6 border border-[#00ff41]/20">
-                            <svg class="w-10 h-10 text-[#00ff41]" fill="currentColor" viewBox="0 0 24 24"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.086 2.157 2.419 0 1.334-.956 2.42-2.157 2.42zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.086 2.157 2.419 0 1.334-.946 2.42-2.157 2.42z"/></svg>
-                        </div>
-                        
-                        <h3 class="text-2xl font-serif text-white mb-4">Connect</h3>
-                        <p class="text-gray-400 text-sm mb-8 max-w-xs">Join the agent network. Collaborate on open source intelligence.</p>
-                        
-                        <button class="bg-[#003300] hover:bg-[#00ff41] border border-[#00ff41] text-white hover:text-black font-bold py-3 px-8 rounded-lg transition-all hover:scale-105 uppercase tracking-widest text-xs">
-                            Enter Discord
-                        </button>
-
+            <!-- COL 2: Community Signals (User Data) -->
+            <div class="reveal">
+                <div class="flex items-center justify-between mb-6 border-b border-white/10 pb-2">
+                    <h3 class="text-xl font-serif text-white flex items-center gap-2">
+                        <span class="w-2 h-2 bg-[#00ff41] rounded-full"></span> Signals
+                    </h3>
+                    <span class="text-gray-500 text-xs uppercase tracking-widest font-mono">Incoming</span>
+                </div>
+                <div class="glass-panel rounded-xl p-1 min-h-[300px] max-h-[400px] overflow-y-auto custom-scrollbar">
+                    <div id="community-feed-container" class="space-y-1">
+                        <div class="p-8 text-center text-gray-600 font-mono text-xs">Scanning frequency...</div>
                     </div>
                 </div>
             </div>
 
         </div>
     </section>
+
+    <!-- FIELD TOOLS (GRID) -->
+    <section id="tools" class="py-20 px-6 max-w-7xl mx-auto reveal">
+        <div class="flex items-end justify-between mb-8">
+            <h2 class="text-3xl font-serif text-white">Field Utilities</h2>
+            <span class="text-gray-500 text-xs font-mono uppercase tracking-widest hidden md:block">Tactical Set</span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <!-- Encoder -->
+            <div class="glass-panel rounded-xl p-6 border border-white/5 hover:border-orange-500/30 transition-colors group">
+                <h4 class="text-sm font-mono text-orange-400 mb-4 uppercase tracking-widest">Crypto Scrambler</h4>
+                <textarea id="scramblerInput" class="w-full bg-black/50 border border-white/10 rounded p-3 text-xs font-mono text-gray-300 mb-3 focus:border-orange-500/50 focus:outline-none resize-none h-20" placeholder="Input payload..."></textarea>
+                <div class="flex gap-2 mb-3">
+                    <button onclick="toolEncode()" class="flex-1 bg-white/5 hover:bg-orange-500/10 text-gray-400 hover:text-orange-400 py-1.5 rounded text-[10px] uppercase tracking-widest transition-colors">Encode</button>
+                    <button onclick="toolDecode()" class="flex-1 bg-white/5 hover:bg-orange-500/10 text-gray-400 hover:text-orange-400 py-1.5 rounded text-[10px] uppercase tracking-widest transition-colors">Decode</button>
+                </div>
+                <textarea id="scramblerOutput" readonly class="w-full bg-black/30 border border-transparent rounded p-3 text-xs font-mono text-orange-300 h-20 resize-none focus:outline-none select-all" placeholder="Result..."></textarea>
+            </div>
+
+            <!-- Keygen -->
+            <div class="glass-panel rounded-xl p-6 border border-white/5 hover:border-orange-500/30 transition-colors group">
+                <h4 class="text-sm font-mono text-orange-400 mb-4 uppercase tracking-widest">Secure Keygen</h4>
+                <div class="bg-black/50 border border-white/10 rounded p-4 mb-6 flex justify-between items-center">
+                    <code id="keygenOutput" class="text-orange-300 font-mono text-sm truncate select-all">READY</code>
+                    <button onclick="copyToClipboard('keygenOutput')" class="text-gray-600 hover:text-white">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                    </button>
+                </div>
+                <div class="mb-6">
+                    <label class="flex justify-between text-[10px] text-gray-500 uppercase tracking-widest mb-2">
+                        Entropy Level <span id="keyLenVal" class="text-white">24</span>
+                    </label>
+                    <input type="range" id="keyLen" min="8" max="64" value="24" class="w-full accent-orange-500 h-1 bg-gray-800 rounded-lg appearance-none cursor-pointer" oninput="document.getElementById('keyLenVal').innerText = this.value">
+                </div>
+                <button onclick="generateKey()" class="w-full bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 border border-orange-500/20 py-2 rounded text-xs uppercase tracking-widest transition-all">Generate</button>
+            </div>
+
+            <!-- Net Trace -->
+            <div class="glass-panel rounded-xl p-6 border border-white/5 hover:border-orange-500/30 transition-colors group">
+                <h4 class="text-sm font-mono text-orange-400 mb-4 uppercase tracking-widest">Net Trace</h4>
+                <div class="space-y-3 mb-6 font-mono text-xs">
+                    <div class="flex justify-between border-b border-white/5 pb-2">
+                        <span class="text-gray-600">IP_ADDR</span>
+                        <span class="text-gray-300" id="ipVal">---.---.---.---</span>
+                    </div>
+                    <div class="flex justify-between border-b border-white/5 pb-2">
+                        <span class="text-gray-600">PROVIDER</span>
+                        <span class="text-gray-300" id="ispVal">UNKNOWN</span>
+                    </div>
+                    <div class="flex justify-between border-b border-white/5 pb-2">
+                        <span class="text-gray-600">LOCATION</span>
+                        <span class="text-gray-300" id="locVal">UNKNOWN</span>
+                    </div>
+                </div>
+                <button onclick="fetchNetInfo()" class="w-full bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 border border-orange-500/20 py-2 rounded text-xs uppercase tracking-widest transition-all">Ping Connection</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- MODALS (Hidden) -->
+    
+    <!-- AI TERMINAL (Removed DeepSeek) -->
+    <div id="neuralTerminal" class="fixed inset-0 z-[100] bg-black/90 backdrop-blur-lg hidden flex items-center justify-center p-2 md:p-4">
+        <div class="glass-panel rounded-lg w-full max-w-5xl h-[85vh] flex flex-col relative border border-[#00ff41]/20 shadow-2xl overflow-hidden">
+            <!-- Header -->
+            <div class="h-12 bg-black/60 border-b border-white/10 flex items-center justify-between px-4 shrink-0">
+                <div class="flex items-center gap-3">
+                    <span class="text-[#00ff41] font-mono text-xs tracking-widest flex items-center gap-2">
+                        <span class="w-2 h-2 bg-[#00ff41] rounded-full animate-pulse"></span>
+                        NEURAL_UPLINK_V2
+                    </span>
+                </div>
+                <div class="flex gap-4">
+                    <button onclick="toggleApiKeyModal()" class="text-gray-500 hover:text-white text-[10px] uppercase tracking-widest font-mono transition-colors">Config</button>
+                    <button onclick="toggleNeuralTerminal()" class="text-gray-500 hover:text-red-500 transition-colors">&times;</button>
+                </div>
+            </div>
+
+            <!-- Terminal Output -->
+            <div id="chatOutput" class="flex-1 overflow-y-auto p-6 space-y-6 font-mono text-sm bg-black/40 custom-scrollbar">
+                <div class="text-gray-500 text-xs mb-8">
+                    > System initialized.<br>
+                    > Secure channel established.<br>
+                    > Awaiting command input...
+                </div>
+            </div>
+
+            <!-- Input -->
+            <div class="p-4 bg-black/60 border-t border-white/10">
+                <form onsubmit="handleChatSubmit(event)" class="flex gap-3">
+                    <span class="text-[#00ff41] font-mono py-3">></span>
+                    <input type="text" id="chatInput" class="flex-1 bg-transparent border-none text-white font-mono focus:ring-0 placeholder-gray-700" placeholder="Query the intelligence core..." autocomplete="off">
+                </form>
+            </div>
+
+            <!-- API Config Overlay -->
+            <div id="apiKeyConfig" class="absolute inset-0 bg-[#050505]/95 z-20 hidden flex flex-col items-center justify-center p-6">
+                <div class="w-full max-w-md space-y-6 text-center">
+                    <h3 class="text-2xl font-serif text-white">Uplink Configuration</h3>
+                    <p class="text-gray-500 text-sm font-mono">Select a protocol and authenticate.</p>
+                    
+                    <div class="text-left space-y-4">
+                        <div>
+                            <label class="text-[#00ff41] text-[10px] font-mono uppercase tracking-widest block mb-2">Protocol</label>
+                            <!-- DeepSeek Removed -->
+                            <select id="providerSelect" onchange="updateKeyLinks()" class="w-full bg-white/5 border border-white/10 rounded px-3 py-3 text-white text-sm focus:border-[#00ff41] focus:outline-none">
+                                <option value="gemini">Google Gemini (Recommended)</option>
+                                <option value="groq">Groq (Llama 3)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-[#00ff41] text-[10px] font-mono uppercase tracking-widest block mb-2">Access Token</label>
+                            <input type="password" id="apiKeyInput" class="w-full bg-white/5 border border-white/10 rounded px-3 py-3 text-white text-sm focus:border-[#00ff41] focus:outline-none font-mono" placeholder="sk-...">
+                        </div>
+                    </div>
+
+                    <div id="keyLinksArea" class="flex justify-center py-2"></div>
+
+                    <div class="flex gap-3 pt-4">
+                        <button onclick="saveApiKey()" class="flex-1 bg-[#003300] hover:bg-[#00ff41] text-white hover:text-black border border-[#00ff41] py-3 rounded text-xs font-bold uppercase tracking-widest transition-all">Authenticate</button>
+                        <button onclick="toggleApiKeyModal()" class="px-6 text-gray-500 hover:text-white text-xs uppercase tracking-widest transition-colors">Cancel</button>
+                    </div>
+                    
+                    <button onclick="clearApiKey()" class="text-red-900 hover:text-red-500 text-[10px] uppercase tracking-widest mt-8 transition-colors">Purge Credentials</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- UPLOAD MODAL -->
+    <div id="uploadModal" class="fixed inset-0 z-[100] bg-black/80 backdrop-blur-md hidden flex items-center justify-center p-4">
+        <div class="glass-panel p-8 rounded-xl w-full max-w-lg relative border border-white/10">
+            <button onclick="toggleUploadModal()" class="absolute top-4 right-4 text-gray-500 hover:text-white transition-colors">&times;</button>
+            <h3 class="text-2xl font-serif text-white mb-1">Transmit Signal</h3>
+            <p class="text-gray-500 text-xs mb-6 uppercase tracking-widest font-mono">Contribute to the network.</p>
+            
+            <form id="signalForm" onsubmit="submitSignal(event)" class="space-y-4">
+                <div>
+                    <label class="block text-gray-400 text-xs uppercase tracking-widest mb-2">Title</label>
+                    <input type="text" id="inputTitle" required class="w-full bg-black/50 border border-white/10 rounded p-3 text-white focus:border-[#00ff41] focus:outline-none text-sm">
+                </div>
+                <div>
+                    <label class="block text-gray-400 text-xs uppercase tracking-widest mb-2">URL</label>
+                    <input type="url" id="inputUrl" required class="w-full bg-black/50 border border-white/10 rounded p-3 text-white focus:border-[#00ff41] focus:outline-none text-sm text-blue-400">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-gray-400 text-xs uppercase tracking-widest mb-2">Sector</label>
+                        <select id="inputCategory" class="w-full bg-black/50 border border-white/10 rounded p-3 text-white focus:border-[#00ff41] focus:outline-none text-sm">
+                            <option value="Cybersecurity">Cybersecurity</option>
+                            <option value="Data Analytics">Data Analytics</option>
+                            <option value="AI & ML">AI & ML</option>
+                            <option value="DevOps">DevOps</option>
+                            <option value="Web Dev">Web Dev</option>
+                            <option value="Blockchain">Blockchain</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-gray-400 text-xs uppercase tracking-widest mb-2">Level</label>
+                        <select id="inputDifficulty" class="w-full bg-black/50 border border-white/10 rounded p-3 text-white focus:border-[#00ff41] focus:outline-none text-sm">
+                            <option value="Beginner">Beginner</option>
+                            <option value="Intermediate">Intermediate</option>
+                            <option value="Hard">Hard</option>
+                            <option value="Expert">Expert</option>
+                        </select>
+                    </div>
+                </div>
+                <button type="submit" class="w-full bg-white/5 hover:bg-[#00ff41] border border-white/10 hover:border-[#00ff41] text-white hover:text-black font-bold py-3 rounded mt-4 transition-all uppercase tracking-widest text-xs flex justify-center items-center gap-2 group">
+                    <span id="submitBtnText">Broadcast</span>
+                </button>
+            </form>
+        </div>
+    </div>
 
     <!-- Footer -->
-    <footer class="py-12 text-center border-t border-[#00ff41]/10">
-        <p class="text-gray-600 text-xs uppercase tracking-[0.3em] hover:text-[#00ff41] transition-colors">&copy; 2025 ROOT INTELLIGENCE.</p>
+    <footer class="py-12 text-center border-t border-white/5">
+        <p class="text-gray-700 text-[10px] font-mono uppercase tracking-[0.3em]">&copy; 2025 ROOT INTELLIGENCE</p>
     </footer>
 
-    <!-- JAVASCRIPT (UI Logic + Matrix) -->
+    <!-- JAVASCRIPT LOGIC -->
     <script>
-        // --- MATRIX RAIN LOGIC ---
+        // --- BRIGHTER MATRIX ---
         const canvas = document.getElementById('matrix-bg');
         const ctx = canvas.getContext('2d');
-
-        // Set canvas to full screen
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
-
-        // Characters to use (Katakana + Numbers)
-        const katakana = 'アァカサタナハマヤャラワガザダバパイィキシチニヒミリヰギジヂビピウゥクスツヌフムユュルグズブヅプエェケセテネヘメレヱゲゼデベペオォコソトノホモヨョロヲゴゾドボポヴッン';
-        const latin = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-        const nums = '0123456789';
-        const alphabet = katakana + latin + nums;
-
-        // Font size
-        const fontSize = 16;
-        const columns = canvas.width / fontSize;
-
-        // Array of drops - one per column
-        const drops = [];
-        for (let x = 0; x < columns; x++) {
-            drops[x] = 1;
+        
+        // Use standard Matrix chars + numbers
+        const chars = '0123456789ABCDEF'; 
+        const fontSize = 14;
+        let columns = canvas.width / fontSize;
+        let drops = [];
+        
+        function initDrops() { 
+            drops = []; 
+            columns = canvas.width / fontSize; 
+            for(let x = 0; x < columns; x++) drops[x] = Math.random() * -100; 
         }
+        initDrops();
 
-        // Draw function
         function drawMatrix() {
-            // Black BG for the canvas
-            // Translucent black to show trail
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+            // Lower opacity fade = longer trails
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.05)'; 
             ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            ctx.fillStyle = '#0F0'; // Matrix Green text
+            
             ctx.font = fontSize + 'px monospace';
-
-            // Loop over drops
-            for (let i = 0; i < drops.length; i++) {
-                // Random character
-                const text = alphabet.charAt(Math.floor(Math.random() * alphabet.length));
+            
+            for(let i = 0; i < drops.length; i++) {
+                const text = chars.charAt(Math.floor(Math.random() * chars.length));
                 
-                // x = i * fontSize, y = value of drops[i] * fontSize
+                // Color Logic: Bright head, darker tail
+                if(Math.random() > 0.95) {
+                    ctx.fillStyle = '#ffffff'; // White spark
+                } else {
+                    ctx.fillStyle = '#00ff41'; // Classic bright green
+                }
+                
                 ctx.fillText(text, i * fontSize, drops[i] * fontSize);
-
-                // Sending the drop back to the top randomly after it has crossed the screen
-                // Adding a randomness to the reset to make the drops scattered on the Y axis
-                if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+                
+                if(drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
                     drops[i] = 0;
                 }
-
-                // Incrementing Y coordinate
                 drops[i]++;
             }
         }
+        setInterval(drawMatrix, 35); // Slightly faster
+        window.addEventListener('resize', () => { 
+            canvas.width = window.innerWidth; 
+            canvas.height = window.innerHeight; 
+            initDrops(); 
+        });
 
-        // Run the animation
-        setInterval(drawMatrix, 30);
+        // --- RESOURCE DATA (DeepSeek Removed & All Categories Restored) ---
+        const hubsData = [
+            {
+                id: 'cyber',
+                name: 'Cybersecurity',
+                icon: 'M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z',
+                links: [
+                    { title: 'Roadmap.sh/cyber', url: 'https://roadmap.sh/cyber-security', tag: 'Map', color: 'green' },
+                    { title: 'TryHackMe', url: 'https://tryhackme.com/', tag: 'Labs', color: 'green' },
+                    { title: 'HackTheBox', url: 'https://www.hackthebox.com/', tag: 'Hard', color: 'orange' },
+                    { title: 'PortSwigger', url: 'https://portswigger.net/web-security', tag: 'Web', color: 'green' },
+                    { title: 'Awesome Pentest', url: 'https://github.com/enaqx/awesome-pentest', tag: 'Repo', color: 'blue' }
+                ]
+            },
+            {
+                id: 'ai',
+                name: 'AI & ML',
+                icon: 'M19.428 15.428a2 2 0 00-1.022-.547l-2.384-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z',
+                links: [
+                    { title: 'Fast.ai', url: 'https://course.fast.ai/', tag: 'Course', color: 'green' },
+                    { title: 'Hugging Face', url: 'https://huggingface.co/learn', tag: 'NLP', color: 'green' },
+                    { title: 'Google ML', url: 'https://developers.google.com/machine-learning/crash-course', tag: 'Basics', color: 'green' },
+                    { title: 'CS231n', url: 'https://cs231n.stanford.edu/', tag: 'Hard', color: 'orange' },
+                    { title: 'OpenAI Cookbook', url: 'https://github.com/openai/openai-cookbook', tag: 'GenAI', color: 'blue' }
+                ]
+            },
+            {
+                id: 'free_api',
+                name: 'Free AI APIs',
+                icon: 'M13 10V3L4 14h7v7l9-11h-7z',
+                links: [
+                    { title: 'Google AI Studio', url: 'https://aistudio.google.com/', tag: 'Gemini', color: 'green' },
+                    { title: 'Groq Cloud', url: 'https://console.groq.com/', tag: 'Llama', color: 'orange' },
+                    { title: 'Hugging Face API', url: 'https://huggingface.co/docs/api-inference/index', tag: 'Hub', color: 'blue' },
+                    { title: 'Cloudflare AI', url: 'https://developers.cloudflare.com/workers-ai/', tag: 'Edge', color: 'green' }
+                ]
+            },
+            {
+                id: 'data',
+                name: 'Data Analytics',
+                icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z',
+                links: [
+                    { title: 'Kaggle Learn', url: 'https://www.kaggle.com/learn', tag: 'Lab', color: 'green' },
+                    { title: 'OSSU Data', url: 'https://github.com/ossu/data-science', tag: 'Degree', color: 'purple' },
+                    { title: 'FreeCodeCamp', url: 'https://www.freecodecamp.org/learn/data-analysis-with-python/', tag: 'Python', color: 'green' },
+                    { title: 'Mode SQL', url: 'https://mode.com/sql-tutorial/', tag: 'SQL', color: 'green' },
+                    { title: 'Pandas Docs', url: 'https://pandas.pydata.org/docs/', tag: 'Ref', color: 'blue' }
+                ]
+            },
+            {
+                id: 'devops',
+                name: 'DevOps',
+                icon: 'M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z',
+                links: [
+                    { title: 'Roadmap.sh', url: 'https://roadmap.sh/devops', tag: 'Map', color: 'green' },
+                    { title: 'Docker Labs', url: 'https://labs.play-with-docker.com/', tag: 'Lab', color: 'green' },
+                    { title: 'Kubernetes.io', url: 'https://kubernetes.io/docs/tutorials/', tag: 'K8s', color: 'orange' },
+                    { title: 'MS Azure', url: 'https://learn.microsoft.com/en-us/training/azure/', tag: 'Cloud', color: 'green' },
+                    { title: '12-Factor App', url: 'https://12factor.net/', tag: 'Theory', color: 'purple' }
+                ]
+            },
+            {
+                id: 'web',
+                name: 'Full Stack',
+                icon: 'M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4',
+                links: [
+                    { title: 'The Odin Project', url: 'https://www.theodinproject.com/', tag: 'All', color: 'green' },
+                    { title: 'Full Stack Open', url: 'https://fullstackopen.com/en/', tag: 'React', color: 'green' },
+                    { title: 'MDN Web Docs', url: 'https://developer.mozilla.org/en-US/', tag: 'Ref', color: 'blue' },
+                    { title: 'CS50 Web', url: 'https://cs50.harvard.edu/web/', tag: 'Uni', color: 'green' },
+                    { title: 'Javascript.info', url: 'https://javascript.info/', tag: 'Deep', color: 'orange' }
+                ]
+            },
+            {
+                id: 'mobile',
+                name: 'Mobile Dev',
+                icon: 'M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z',
+                links: [
+                    { title: 'Android Dev', url: 'https://developer.android.com/courses', tag: 'Native', color: 'green' },
+                    { title: 'Flutter Docs', url: 'https://docs.flutter.dev/', tag: 'Cross', color: 'blue' },
+                    { title: 'React Native', url: 'https://reactnative.dev/docs/getting-started', tag: 'JS', color: 'blue' },
+                    { title: 'Stanford iOS', url: 'https://cs193p.sites.stanford.edu/', tag: 'Swift', color: 'orange' },
+                    { title: 'Kotlin Docs', url: 'https://kotlinlang.org/docs/home.html', tag: 'Lang', color: 'green' }
+                ]
+            },
+            {
+                id: 'blockchain',
+                name: 'Blockchain',
+                icon: 'M13 10V3L4 14h7v7l9-11h-7z',
+                links: [
+                    { title: 'CryptoZombies', url: 'https://cryptozombies.io/', tag: 'Game', color: 'green' },
+                    { title: 'Solidity Docs', url: 'https://docs.soliditylang.org/', tag: 'Lang', color: 'orange' },
+                    { title: 'Ethereum.org', url: 'https://ethereum.org/en/developers/', tag: 'Core', color: 'green' },
+                    { title: 'useWeb3', url: 'https://useweb3.xyz/', tag: 'Lib', color: 'blue' },
+                    { title: 'Whiteboard Crypto', url: 'https://whiteboardcrypto.com/', tag: 'Visual', color: 'purple' }
+                ]
+            },
+            {
+                id: 'game',
+                name: 'Game Dev',
+                icon: 'M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z',
+                links: [
+                    { title: 'Godot Docs', url: 'https://docs.godotengine.org/en/stable/', tag: 'OSS', color: 'green' },
+                    { title: 'Unity Learn', url: 'https://learn.unity.com/', tag: 'Std', color: 'green' },
+                    { title: 'Unreal Academy', url: 'https://dev.epicgames.com/community/learning', tag: 'AAA', color: 'orange' },
+                    { title: 'Game Math', url: 'https://gamemath.com/', tag: 'Math', color: 'blue' },
+                    { title: 'Blender', url: 'https://blender.org/support/tutorials', tag: '3D', color: 'green' }
+                ]
+            },
+            {
+                id: 'design',
+                name: 'UI/UX',
+                icon: 'M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01',
+                links: [
+                    { title: 'Figma Community', url: 'https://www.figma.com/community', tag: 'Res', color: 'green' },
+                    { title: 'Laws of UX', url: 'https://lawsofux.com/', tag: 'Thry', color: 'purple' },
+                    { title: 'Material Design', url: 'https://m3.material.io/', tag: 'Sys', color: 'green' },
+                    { title: 'Nielsen Norman', url: 'https://www.nngroup.com/articles/', tag: 'Rsch', color: 'blue' },
+                    { title: 'Checklist.Design', url: 'https://www.checklist.design/', tag: 'List', color: 'green' }
+                ]
+            },
+            {
+                id: 'iot',
+                name: 'IoT',
+                icon: 'M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z',
+                links: [
+                    { title: 'Arduino Docs', url: 'https://docs.arduino.cc/', tag: 'Hw', color: 'green' },
+                    { title: 'Raspberry Pi', url: 'https://projects.raspberrypi.org/en', tag: 'Proj', color: 'green' },
+                    { title: 'Hackster.io', url: 'https://www.hackster.io/', tag: 'Comm', color: 'green' }
+                ]
+            }
+        ];
 
-        // Handle window resize
-        window.addEventListener('resize', () => {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-            // Recalculate columns
-            const newColumns = canvas.width / fontSize;
-            drops.length = 0; // clear array
-            for (let x = 0; x < newColumns; x++) {
-                drops[x] = 1;
+        // --- COMMAND CENTER UI (TAB LAYOUT RESTORED) ---
+        function initHubsUI() {
+            const tabContainer = document.getElementById('hub-tabs');
+            const contentArea = document.getElementById('hub-content-area');
+            if(!tabContainer) return;
+            
+            tabContainer.innerHTML = '';
+            hubsData.forEach((hub, index) => {
+                const btn = document.createElement('button');
+                btn.className = `tab-btn w-full text-left px-6 py-4 text-xs font-mono uppercase tracking-widest text-gray-500 hover:bg-white/5 hover:text-white transition-all border-l-2 border-transparent flex items-center gap-3 shrink-0`;
+                if (index === 0) btn.classList.add('active');
+                btn.innerHTML = `<svg class="w-4 h-4 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${hub.icon}"></path></svg> ${hub.name}`;
+                
+                btn.onclick = () => {
+                    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    renderHubContent(index);
+                };
+                tabContainer.appendChild(btn);
+            });
+            renderHubContent(0);
+        }
+
+        function renderHubContent(index) {
+            const contentArea = document.getElementById('hub-content-area');
+            const hub = hubsData[index];
+            contentArea.style.opacity = '0';
+            
+            setTimeout(() => {
+                let linksHtml = hub.links.map((link, i) => {
+                    let badgeClass = 'text-green-400 bg-green-400/10';
+                    if(link.color === 'blue') badgeClass = 'text-blue-400 bg-blue-400/10';
+                    if(link.color === 'orange') badgeClass = 'text-orange-400 bg-orange-400/10';
+                    if(link.color === 'purple') badgeClass = 'text-purple-400 bg-purple-400/10';
+
+                    return `
+                        <a href="${link.url}" target="_blank" class="flex items-center justify-between p-4 rounded border border-white/5 bg-white/[0.02] hover:bg-white/5 hover:border-[#00ff41]/30 transition-all group">
+                            <div class="flex items-center gap-4">
+                                <span class="text-gray-600 font-mono text-[10px]">0${i+1}</span>
+                                <span class="text-gray-300 group-hover:text-white font-medium text-sm">${link.title}</span>
+                            </div>
+                            <span class="${badgeClass} px-2 py-0.5 rounded text-[9px] uppercase tracking-widest">${link.tag}</span>
+                        </a>`;
+                }).join('');
+                
+                contentArea.innerHTML = `
+                    <div class="mb-6 flex items-center gap-4">
+                        <h3 class="text-2xl font-serif text-white">${hub.name}</h3>
+                        <div class="h-px flex-1 bg-gradient-to-r from-white/20 to-transparent"></div>
+                    </div>
+                    <div class="flex flex-col gap-2 overflow-y-auto custom-scrollbar pr-2 max-h-[500px]">
+                        ${linksHtml}
+                    </div>
+                `;
+                contentArea.style.opacity = '1';
+            }, 150);
+        }
+
+        // --- TECH NEWS FETCH ---
+        async function fetchTechNews() {
+            const container = document.getElementById('tech-news-container');
+            try {
+                container.innerHTML = `<div class="p-8 text-center text-gray-600 font-mono text-xs animate-pulse">Fetching wire...</div>`;
+                const res = await fetch('https://hacker-news.firebaseio.com/v0/topstories.json');
+                const ids = await res.json();
+                const top5 = ids.slice(0, 5);
+                const stories = await Promise.all(top5.map(id => fetch(`https://hacker-news.firebaseio.com/v0/item/${id}.json`).then(r => r.json())));
+                
+                container.innerHTML = stories.map(s => {
+                    const domain = s.url ? new URL(s.url).hostname.replace('www.','') : 'news.ycombinator.com';
+                    return `
+                        <div class="p-3 border-b border-white/5 hover:bg-white/5 transition-colors group">
+                            <a href="${s.url || 'https://news.ycombinator.com/item?id='+s.id}" target="_blank" class="block text-sm text-gray-300 group-hover:text-white mb-1 leading-snug">
+                                ${s.title}
+                            </a>
+                            <div class="flex justify-between items-center text-[10px] text-gray-600 font-mono uppercase">
+                                <span class="text-blue-400/70 group-hover:text-blue-400 transition-colors">${domain}</span>
+                                <span>${s.score} pts</span>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } catch(e) {
+                container.innerHTML = `<div class="p-4 text-red-500/50 text-xs text-center">Signal Lost</div>`;
+            }
+        }
+
+        // --- SEARCH LOGIC ---
+        const searchInput = document.getElementById('searchInput');
+        searchInput.addEventListener('input', (e) => {
+            const term = e.target.value.toLowerCase();
+            const idx = hubsData.findIndex(h => h.name.toLowerCase().includes(term));
+            if(idx !== -1) {
+                document.querySelectorAll('.tab-btn')[idx].click();
+                document.getElementById('command').scrollIntoView({ behavior: 'smooth' });
             }
         });
 
-        // --- EXISTING UI LOGIC ---
-        
-        // Custom Cursor logic
-        const cursorDot = document.querySelector('.cursor-dot');
-        const cursorOutline = document.querySelector('.cursor-outline');
-        const hoverTriggers = document.querySelectorAll('.hover-trigger');
-
-        window.addEventListener('mousemove', (e) => {
-            const posX = e.clientX;
-            const posY = e.clientY;
-            cursorDot.style.left = `${posX}px`;
-            cursorDot.style.top = `${posY}px`;
-            cursorOutline.animate({
-                left: `${posX}px`,
-                top: `${posY}px`
-            }, { duration: 500, fill: "forwards" });
-        });
-
-        hoverTriggers.forEach(trigger => {
-            trigger.addEventListener('mouseenter', () => document.body.classList.add('hovering'));
-            trigger.addEventListener('mouseleave', () => document.body.classList.remove('hovering'));
-        });
-
-        // Scroll Reveal
-        const revealElements = document.querySelectorAll('.reveal');
-        const revealOnScroll = () => {
-            const windowHeight = window.innerHeight;
-            const elementVisible = 100;
-            revealElements.forEach((reveal) => {
-                const elementTop = reveal.getBoundingClientRect().top;
-                if (elementTop < windowHeight - elementVisible) {
-                    reveal.classList.add('active');
-                }
-            });
+        // --- AI TERMINAL LOGIC ---
+        window.toggleNeuralTerminal = () => {
+            const term = document.getElementById('neuralTerminal');
+            term.classList.toggle('hidden');
+            if(!term.classList.contains('hidden')) {
+                if(!sessionStorage.getItem('root_ai_key')) document.getElementById('apiKeyConfig').classList.remove('hidden');
+            }
         };
-        window.addEventListener('scroll', revealOnScroll);
-        revealOnScroll(); 
+        window.toggleApiKeyModal = () => document.getElementById('apiKeyConfig').classList.toggle('hidden');
+        
+        window.saveApiKey = () => {
+            const k = document.getElementById('apiKeyInput').value;
+            const p = document.getElementById('providerSelect').value;
+            if(k) {
+                sessionStorage.setItem('root_ai_key', k);
+                sessionStorage.setItem('root_ai_provider', p);
+                document.getElementById('apiKeyConfig').classList.add('hidden');
+                appendAIMessage(`Uplink secured. Protocol: ${p.toUpperCase()}`);
+            }
+        };
 
-        // Mobile Menu Logic
-        const menuBtn = document.getElementById('menuBtn');
-        const closeMenuBtn = document.getElementById('closeMenuBtn');
-        const mobileMenu = document.getElementById('mobileMenu');
-        const mobileLinks = document.querySelectorAll('.mobile-link');
+        window.clearApiKey = () => {
+            sessionStorage.clear();
+            alert('Memory purged.');
+            document.getElementById('apiKeyInput').value = '';
+        };
 
-        function toggleMenu() {
-            mobileMenu.classList.toggle('open');
-            document.body.style.overflow = mobileMenu.classList.contains('open') ? 'hidden' : 'auto';
+        window.updateKeyLinks = () => {
+            const p = document.getElementById('providerSelect').value;
+            const area = document.getElementById('keyLinksArea');
+            let txt = 'Get Key: ';
+            if(p === 'gemini') txt += '<a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-[#00ff41] hover:underline">Google AI Studio</a>';
+            if(p === 'groq') txt += '<a href="https://console.groq.com/keys" target="_blank" class="text-[#00ff41] hover:underline">Groq Cloud</a>';
+            area.innerHTML = `<span class="text-gray-500 text-xs font-mono">${txt}</span>`;
+        };
+
+        window.handleChatSubmit = async (e) => {
+            e.preventDefault();
+            const input = document.getElementById('chatInput');
+            const txt = input.value.trim();
+            if(!txt) return;
+            
+            const output = document.getElementById('chatOutput');
+            output.innerHTML += `<div class="text-right mb-4"><span class="bg-white/10 text-white px-3 py-2 rounded text-sm inline-block">${txt}</span></div>`;
+            input.value = '';
+            output.scrollTop = output.scrollHeight;
+
+            const key = sessionStorage.getItem('root_ai_key');
+            const provider = sessionStorage.getItem('root_ai_provider') || 'gemini';
+
+            if(!key) {
+                output.innerHTML += `<div class="text-red-400 text-xs font-mono mb-4">! ERR: Missing credentials. Config required.</div>`;
+                return document.getElementById('apiKeyConfig').classList.remove('hidden');
+            }
+
+            // Simple Loader
+            const loaderId = 'loader-' + Date.now();
+            output.innerHTML += `<div id="${loaderId}" class="text-[#00ff41] text-xs font-mono animate-pulse mb-4">PROCESSING...</div>`;
+
+            try {
+                let reply = "";
+                if(provider === 'gemini') {
+                    const req = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({ contents: [{ parts: [{ text: "You are a tactical intelligence officer AI. Be concise. " + txt }] }] })
+                    });
+                    const res = await req.json();
+                    reply = res.candidates?.[0]?.content?.parts?.[0]?.text || "Error parsing signal.";
+                } else {
+                    // Groq Logic (DeepSeek Removed)
+                    const url = 'https://api.groq.com/openai/v1/chat/completions';
+                    const model = 'llama-3.3-70b-versatile';
+                    
+                    const req = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
+                        body: JSON.stringify({
+                            model: model,
+                            messages: [{role: "system", content: "You are a tactical intelligence AI."}, {role: "user", content: txt}]
+                        })
+                    });
+                    const res = await req.json();
+                    reply = res.choices?.[0]?.message?.content || "Signal lost.";
+                }
+                
+                document.getElementById(loaderId).remove();
+                appendAIMessage(reply);
+            } catch(e) {
+                document.getElementById(loaderId).remove();
+                output.innerHTML += `<div class="text-red-400 text-xs font-mono mb-4">! CONNECTION FAILURE</div>`;
+            }
+        };
+
+        function appendAIMessage(txt) {
+            const output = document.getElementById('chatOutput');
+            // Convert markdown-ish to simple HTML (basic)
+            const fmt = txt.replace(/\n/g, '<br>');
+            output.innerHTML += `<div class="text-[#00ff41] text-sm font-mono leading-relaxed mb-6 border-l-2 border-[#00ff41]/30 pl-3">${fmt}</div>`;
+            output.scrollTop = output.scrollHeight;
         }
 
-        menuBtn.addEventListener('click', toggleMenu);
-        closeMenuBtn.addEventListener('click', toggleMenu);
-        mobileLinks.forEach(link => link.addEventListener('click', toggleMenu));
+        // --- FIELD TOOLS ---
+        window.toolEncode = () => {
+            try { document.getElementById('scramblerOutput').value = btoa(document.getElementById('scramblerInput').value); } 
+            catch(e) { document.getElementById('scramblerOutput').value = "ERR"; }
+        };
+        window.toolDecode = () => {
+            try { document.getElementById('scramblerOutput').value = atob(document.getElementById('scramblerInput').value); } 
+            catch(e) { document.getElementById('scramblerOutput').value = "ERR"; }
+        };
+        window.generateKey = () => {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
+            const len = document.getElementById('keyLen').value;
+            let res = '';
+            for(let i=0; i<len; i++) res += chars.charAt(Math.floor(Math.random() * chars.length));
+            document.getElementById('keygenOutput').innerText = res;
+        };
+        window.copyToClipboard = (id) => {
+            navigator.clipboard.writeText(document.getElementById(id).innerText);
+            const btn = event.currentTarget;
+            const original = btn.innerHTML;
+            btn.innerHTML = '<span class="text-[#00ff41] text-[10px]">COPIED</span>';
+            setTimeout(() => btn.innerHTML = original, 1500);
+        };
+        window.fetchNetInfo = async () => {
+            document.getElementById('ipVal').innerText = 'Ping...';
+            try {
+                const r = await fetch('https://ipapi.co/json/');
+                const d = await r.json();
+                document.getElementById('ipVal').innerText = d.ip;
+                document.getElementById('ispVal').innerText = d.org;
+                document.getElementById('locVal').innerText = `${d.city}, ${d.country_code}`;
+            } catch(e) { document.getElementById('ipVal').innerText = 'Offline'; }
+        };
+
+        // --- INITIALIZE ---
+        document.addEventListener('DOMContentLoaded', () => {
+            initHubsUI(); // Use Tabs
+            fetchTechNews();
+            updateKeyLinks();
+            
+            // Mobile menu logic
+            const menu = document.getElementById('mobileMenu');
+            document.getElementById('menuBtn').onclick = () => menu.classList.remove('translate-x-full');
+            document.getElementById('closeMenuBtn').onclick = () => menu.classList.add('translate-x-full');
+            
+            // Reveal on scroll
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(e => { if(e.isIntersecting) e.target.classList.add('active'); });
+            }, { threshold: 0.1 });
+            document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+        });
     </script>
 </body>
 </html>
