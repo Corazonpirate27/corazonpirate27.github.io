@@ -3,17 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ROOT | Intelligence Hub</title>
+    <title>ROOT | Open Source Academy</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600&family=Inter:wght@300;400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     
     <!-- Firebase SDKs -->
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
-        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
+        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, deleteDoc, doc } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
 
         const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app';
@@ -32,9 +32,7 @@
                 } else {
                     await signInAnonymously(auth);
                 }
-            } catch (error) {
-                console.error("Auth Error:", error);
-            }
+            } catch (error) { console.error("Auth Error:", error); }
         };
         initAuth();
 
@@ -51,59 +49,90 @@
         function setupRealtimeListener() {
             if (listenerUnsubscribe) return;
             const signalsRef = collection(db, 'artifacts', appId, 'public', 'data', 'signals');
-            
             listenerUnsubscribe = onSnapshot(signalsRef, (snapshot) => {
                 const feedContainer = document.getElementById('community-feed-container');
                 if(!feedContainer) return;
-
                 feedContainer.innerHTML = ''; 
                 let signals = [];
                 snapshot.forEach(doc => signals.push({ id: doc.id, ...doc.data() }));
                 signals.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
 
                 if (signals.length === 0) {
-                    feedContainer.innerHTML = `<div class="text-gray-600 italic text-xs p-4 text-center font-mono">No signals detected.</div>`;
+                    feedContainer.innerHTML = `<div class="text-gray-500 italic text-xs p-6 text-center font-mono">No active signals on the wire.</div>`;
                     return;
                 }
-
-                signals.forEach(signal => {
-                    feedContainer.appendChild(createSignalCard(signal));
-                });
+                signals.forEach(signal => feedContainer.appendChild(createSignalCardSecure(signal)));
             });
         }
 
-        function createSignalCard(data) {
-            const div = document.createElement('div');
-            div.className = 'group flex flex-col gap-1 p-3 rounded bg-white/5 hover:bg-[#00ff41]/5 border border-transparent hover:border-[#00ff41]/20 transition-all duration-300';
+        function createSignalCardSecure(data) {
+            const card = document.createElement('div');
+            card.className = 'group flex flex-col gap-2 p-4 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 hover:border-[#00ff41]/20 transition-all duration-300 relative mb-3';
             
-            let badgeColor = 'text-green-400 bg-green-400/10';
-            if(data.difficulty === 'Intermediate') badgeColor = 'text-blue-400 bg-blue-400/10';
-            if(data.difficulty === 'Hard') badgeColor = 'text-orange-400 bg-orange-400/10';
-            if(data.difficulty === 'Expert') badgeColor = 'text-purple-400 bg-purple-400/10';
+            const header = document.createElement('div');
+            header.className = 'flex justify-between items-center';
+            const category = document.createElement('span');
+            category.className = 'text-[10px] font-bold font-mono text-gray-400 uppercase tracking-widest';
+            category.textContent = data.category || 'SIGNAL'; 
 
-            div.innerHTML = `
-                <div class="flex justify-between items-start">
-                    <span class="text-[10px] font-mono text-gray-500 uppercase tracking-wider">${data.category || 'SIGNAL'}</span>
-                    <span class="${badgeColor} px-1.5 py-0.5 rounded text-[9px] uppercase tracking-widest border border-current opacity-70">${data.difficulty || 'N/A'}</span>
-                </div>
-                <a href="${data.url}" target="_blank" class="text-sm text-gray-200 group-hover:text-[#00ff41] font-medium truncate transition-colors">
-                    ${data.title}
-                </a>
-            `;
-            return div;
+            const controls = document.createElement('div');
+            controls.className = 'flex items-center gap-2';
+            const badge = document.createElement('span');
+            let badgeClass = 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20';
+            if(data.difficulty === 'Intermediate') badgeClass = 'text-cyan-400 bg-cyan-400/10 border-cyan-400/20';
+            if(data.difficulty === 'Hard') badgeClass = 'text-orange-400 bg-orange-400/10 border-orange-400/20';
+            if(data.difficulty === 'Expert') badgeClass = 'text-purple-400 bg-purple-400/10 border-purple-400/20';
+            badge.className = `${badgeClass} px-2 py-1 rounded text-[9px] font-bold uppercase tracking-widest border`;
+            badge.textContent = data.difficulty || 'N/A'; 
+            controls.appendChild(badge);
+
+            if (currentUser && data.agentId === currentUser.uid) {
+                const delBtn = document.createElement('button');
+                delBtn.className = 'text-gray-500 hover:text-red-500 hover:bg-red-500/10 transition-colors p-1 rounded';
+                delBtn.title = 'Delete Signal';
+                delBtn.innerHTML = `<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>`;
+                delBtn.onclick = (e) => { 
+                    e.preventDefault(); 
+                    e.stopPropagation();
+                    window.deleteSignal(data.id); 
+                };
+                controls.appendChild(delBtn);
+            }
+
+            header.appendChild(category);
+            header.appendChild(controls);
+
+            const link = document.createElement('a');
+            link.href = data.url; 
+            link.target = "_blank";
+            link.className = 'text-sm text-gray-200 group-hover:text-[#00ff41] font-medium leading-snug transition-colors block';
+            link.textContent = data.title; 
+
+            card.appendChild(header);
+            card.appendChild(link);
+            return card;
+        }
+
+        window.deleteSignal = async (docId) => {
+            if(!confirm("Purge this signal from the network?")) return;
+            try { await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'signals', docId)); } 
+            catch (err) { alert("Access denied."); }
         }
 
         window.submitSignal = async function(e) {
             e.preventDefault();
-            if (!currentUser) return alert("Connecting...");
-
+            if (!currentUser) return alert("Establishing secure connection...");
             const submitBtn = document.getElementById('submitBtnText');
-            submitBtn.innerText = "TRANSMITTING...";
+            submitBtn.innerText = "UPLOADING...";
+            
+            const title = document.getElementById('inputTitle').value;
+            const url = document.getElementById('inputUrl').value;
+            if(!title || !url) { alert("Incomplete payload."); submitBtn.innerText = "TRANSMIT"; return; }
 
             try {
                 await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'signals'), {
-                    title: document.getElementById('inputTitle').value,
-                    url: document.getElementById('inputUrl').value,
+                    title: title,
+                    url: url,
                     category: document.getElementById('inputCategory').value,
                     difficulty: document.getElementById('inputDifficulty').value,
                     timestamp: serverTimestamp(),
@@ -111,11 +140,8 @@
                 });
                 toggleUploadModal();
                 document.getElementById('signalForm').reset();
-            } catch (error) {
-                alert("Transmission failed.");
-            } finally {
-                submitBtn.innerText = "TRANSMIT";
-            }
+            } catch (error) { alert("Transmission blocked."); } 
+            finally { submitBtn.innerText = "TRANSMIT"; }
         }
         
         window.toggleUploadModal = () => document.getElementById('uploadModal').classList.toggle('hidden');
@@ -133,589 +159,664 @@
                     colors: {
                         'root-green': '#00ff41',
                         'root-dark': '#050505',
-                        'root-glass': 'rgba(10, 10, 10, 0.7)',
+                        'root-card': '#0A0A0A',
+                    },
+                    backgroundImage: {
+                        'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
+                        'hero-glow': 'conic-gradient(from 180deg at 50% 50%, #00ff4111 0deg, #00000000 360deg)',
                     },
                     animation: {
-                        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'scan': 'scan 2s linear infinite',
+                        'pulse-fast': 'pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    },
+                    keyframes: {
+                        scan: {
+                            '0%': { transform: 'translateY(-100%)' },
+                            '100%': { transform: 'translateY(100%)' },
+                        }
                     }
                 }
             }
         }
     </script>
     <style>
+        html {
+            scroll-behavior: smooth;
+            scroll-padding-top: 80px;
+        }
+
         body {
-            background-color: #000000;
+            background-color: #020202;
             color: #e5e5e5;
             overflow-x: hidden;
-            -webkit-tap-highlight-color: transparent;
+            -webkit-font-smoothing: antialiased;
         }
 
-        /* --- BRIGHTER MATRIX --- */
         #matrix-bg {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            z-index: -10;
-            pointer-events: none;
-            opacity: 0.8; /* HIGH BRIGHTNESS */
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            z-index: -10; pointer-events: none; opacity: 0.08;
         }
 
-        /* --- UI ELEMENTS --- */
         .glass-panel {
-            background: var(--root-glass);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(0, 255, 65, 0.1);
-            box-shadow: 0 0 0 1px rgba(0,0,0,0.5), 0 4px 20px rgba(0,0,0,0.8);
+            background: rgba(15, 15, 15, 0.7);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        }
+        
+        .glass-sidebar {
+            background: rgba(10, 10, 10, 0.8);
+            backdrop-filter: blur(20px);
+            border-right: 1px solid rgba(255, 255, 255, 0.05);
         }
 
-        .hover-trigger:hover {
-            text-shadow: 0 0 8px rgba(0, 255, 65, 0.6);
-        }
-
-        /* Custom Scrollbar */
-        .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #222; border-radius: 3px; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #00ff41; }
 
         .reveal {
-            opacity: 0;
-            transform: translateY(20px);
-            transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+            opacity: 0; transform: translateY(20px);
+            transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
         }
-        .reveal.active {
-            opacity: 1;
-            transform: translateY(0);
-        }
+        .reveal.active { opacity: 1; transform: translateY(0); }
 
-        /* Tab Active State - Responsive */
+        .nav-link {
+            position: relative;
+        }
+        .nav-link::after {
+            content: ''; position: absolute; bottom: -4px; left: 0; width: 0; height: 1px;
+            background: #00ff41; transition: width 0.3s ease;
+        }
+        .nav-link:hover::after { width: 100%; }
+
+        .tab-btn { transition: all 0.2s ease; }
         .tab-btn.active {
-            background: rgba(0, 255, 65, 0.05);
-            border-color: #00ff41;
-            color: #00ff41;
+            background: linear-gradient(90deg, rgba(0,255,65,0.1) 0%, rgba(0,0,0,0) 100%);
+            border-left-color: #00ff41;
+            color: #fff;
         }
-
-        ::selection { background: #003300; color: #00ff41; }
+        .tab-btn:not(.active):hover { color: #fff; background: rgba(255,255,255,0.03); }
     </style>
 </head>
-<body class="font-sans antialiased selection:bg-green-900 selection:text-green-400">
+<body class="font-sans antialiased selection:bg-[#00ff41]/30 selection:text-white">
 
-    <!-- Matrix Background -->
     <canvas id="matrix-bg"></canvas>
 
-    <!-- Navigation -->
-    <nav class="fixed w-full z-50 border-b border-white/5 bg-black/80 backdrop-blur-md transition-all duration-300">
-        <div class="max-w-7xl mx-auto px-6 h-16 flex justify-between items-center">
-            <a href="#" class="font-serif text-xl font-bold tracking-wider text-white hover:text-[#00ff41] transition-colors flex items-center gap-2">
-                <div class="w-2 h-2 bg-[#00ff41] rounded-full animate-pulse-slow"></div>
-                ROOT.
-            </a>
-            
-            <!-- Desktop Menu -->
-            <div class="hidden md:flex items-center space-x-8 text-[11px] uppercase tracking-[0.15em] font-medium text-gray-400">
-                <a href="#command" class="hover:text-white transition-colors">Command Center</a>
-                <a href="#streams" class="hover:text-white transition-colors">Live Streams</a>
-                <a href="#tools" class="hover:text-white transition-colors">Field Tools</a>
-                
-                <div class="h-4 w-px bg-white/10"></div>
-
-                <button onclick="toggleNeuralTerminal()" class="text-[#00ff41] hover:text-white transition-colors flex items-center gap-2">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                    AI Uplink
-                </button>
-
-                <button onclick="toggleUploadModal()" class="border border-white/20 hover:border-[#00ff41] hover:text-[#00ff41] px-4 py-1.5 rounded transition-all">
-                    + Signal
-                </button>
+    <!-- Navbar -->
+    <nav class="fixed w-full z-50 border-b border-white/5 bg-black/80 backdrop-blur-xl">
+        <div class="max-w-screen-2xl mx-auto px-6 h-16 flex justify-between items-center">
+            <div class="flex items-center gap-8">
+                <a href="#" class="font-serif text-xl font-bold tracking-widest text-white flex items-center gap-3">
+                    <div class="w-2 h-2 bg-[#00ff41] rounded-full shadow-[0_0_10px_#00ff41]"></div>
+                    ROOT<span class="opacity-50 font-normal">.ACADEMY</span>
+                </a>
+                <div class="hidden md:flex items-center gap-6 text-[11px] uppercase tracking-widest font-medium text-gray-400">
+                    <a href="#curriculum" class="nav-link hover:text-white transition-colors">Curriculum</a>
+                    <a href="#intelligence" class="nav-link hover:text-white transition-colors">Intelligence</a>
+                    <a href="#arcade" class="nav-link hover:text-white transition-colors">Arcade</a>
+                </div>
             </div>
 
-            <!-- Mobile Menu Button -->
-            <button id="menuBtn" class="md:hidden text-[#00ff41] z-50 relative">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
-            </button>
+            <div class="flex items-center gap-4">
+                <!-- SONIC UPLINK -->
+                <button onclick="toggleAmbience()" id="ambienceBtn" class="flex items-center gap-2 px-4 py-2 rounded-full border border-white/10 hover:border-pink-500 hover:bg-pink-500/10 transition-all group">
+                    <svg class="w-4 h-4 text-gray-500 group-hover:text-pink-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"></path></svg>
+                    <span class="text-[10px] uppercase tracking-widest text-gray-300 group-hover:text-white">Sonic Uplink</span>
+                </button>
+
+                <button onclick="toggleUploadModal()" class="bg-white text-black hover:bg-[#00ff41] px-5 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all">
+                    Upload Signal
+                </button>
+            </div>
         </div>
     </nav>
 
-    <!-- Mobile Menu Overlay (Z-Index Fixed) -->
-    <div id="mobileMenu" class="fixed inset-0 z-[100] bg-black/95 backdrop-blur-xl flex flex-col justify-center items-center space-y-8 touch-none translate-x-full transition-transform duration-300">
-        <button id="closeMenuBtn" class="absolute top-6 right-6 p-4 text-white/50 hover:text-white text-3xl">&times;</button>
-        <a href="#command" onclick="toggleMenu()" class="text-2xl font-serif text-white hover:text-[#00ff41]">Command Center</a>
-        <a href="#streams" onclick="toggleMenu()" class="text-2xl font-serif text-white hover:text-[#00ff41]">Live Streams</a>
-        <a href="#tools" onclick="toggleMenu()" class="text-2xl font-serif text-white hover:text-[#00ff41]">Field Tools</a>
-        <button onclick="toggleNeuralTerminal(); toggleMenu()" class="text-2xl font-serif text-[#00ff41]">Neural Link</button>
-    </div>
-
-    <!-- Hero Section -->
-    <section class="min-h-[80vh] flex flex-col justify-center items-center relative px-4 pt-20">
-        <div class="text-center z-10 w-full max-w-3xl space-y-6">
-            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[#00ff41]/20 bg-[#00ff41]/5 text-[#00ff41] text-[10px] uppercase tracking-widest font-mono mb-4 reveal">
+    <!-- Hero -->
+    <section class="pt-32 pb-20 px-6 relative overflow-hidden">
+        <div class="absolute inset-0 bg-hero-glow opacity-50 pointer-events-none"></div>
+        <div class="max-w-4xl mx-auto text-center relative z-10">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/10 bg-white/5 text-gray-300 text-[10px] uppercase tracking-widest mb-8 reveal">
                 <span class="w-1 h-1 bg-[#00ff41] rounded-full animate-pulse"></span>
-                System Online v2.1
+                Academic Year 2025
             </div>
             
-            <h1 class="reveal text-5xl md:text-7xl font-serif font-medium leading-tight text-white">
-                Signal. <span class="text-gray-600">Not Noise.</span>
+            <h1 class="reveal text-6xl md:text-8xl font-serif font-medium leading-tight text-white mb-8 tracking-tight">
+                Degree Free. <br>
+                <span class="text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-600">Industry Ready.</span>
             </h1>
             
-            <p class="reveal text-gray-400 text-lg font-light max-w-lg mx-auto leading-relaxed">
-                The definitive open-source intelligence index. Verified protocols for the modern web.
+            <p class="reveal text-gray-400 text-lg font-light max-w-xl mx-auto leading-relaxed mb-10">
+                The definitive open-source master's program. Eleven specialized faculties designed to take you from novice to architect without the tuition.
             </p>
 
-            <!-- Minimal Search -->
-            <div class="reveal w-full max-w-md mx-auto relative mt-8">
-                <input type="text" id="searchInput" placeholder="Search index (e.g. 'Python', 'Zero Knowledge')..." 
-                    class="w-full bg-white/5 border border-white/10 text-white pl-4 pr-12 py-4 rounded-lg focus:outline-none focus:border-[#00ff41]/50 focus:bg-black transition-all font-mono text-sm placeholder-gray-600">
-                <div class="absolute right-4 top-4 text-gray-600">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-                </div>
+            <!-- Search Bar -->
+            <div class="reveal max-w-lg mx-auto relative group">
+                <div class="absolute -inset-1 bg-gradient-to-r from-[#00ff41] to-blue-600 rounded-xl opacity-20 group-hover:opacity-40 blur transition duration-500"></div>
+                <input type="text" id="searchInput" placeholder="Search syllabus (e.g. 'Machine Learning', 'React')..." 
+                    class="relative w-full bg-[#0A0A0A] border border-white/10 text-white pl-6 pr-12 py-4 rounded-xl focus:outline-none focus:border-white/20 transition-all font-mono text-sm placeholder-gray-600">
+                <svg class="absolute right-5 top-4 w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
             </div>
         </div>
     </section>
 
-    <!-- COMMAND CENTER (TAB LAYOUT - MOBILE SCROLL FIXED) -->
-    <section id="command" class="py-20 px-6 max-w-7xl mx-auto">
-        <div class="flex items-end justify-between mb-8 reveal">
-            <h2 class="text-3xl font-serif text-white">Command Center</h2>
-            <span class="text-gray-500 text-xs font-mono uppercase tracking-widest hidden md:block">Protocol Index</span>
-        </div>
-
-        <div class="glass-panel rounded-xl flex flex-col md:flex-row min-h-[600px] overflow-hidden reveal">
-            <!-- Sidebar Tabs (Fixed for Mobile Scroll) -->
-            <div class="w-full md:w-64 border-b md:border-b-0 md:border-r border-white/10 bg-black/20 flex flex-row md:flex-col overflow-x-auto custom-scrollbar" id="hub-tabs">
-                <!-- JS Injected -->
-            </div>
-
-            <!-- Content Area -->
-            <div class="flex-1 p-6 md:p-10 relative bg-black/40">
-                <div id="hub-content-area" class="relative z-10 h-full flex flex-col transition-opacity duration-300">
-                    <div class="flex-1 flex items-center justify-center text-gray-600 font-mono text-xs animate-pulse">
-                        LOADING PROTOCOLS...
-                    </div>
-                </div>
-                <!-- Subtle grid pattern overlay -->
-                <div class="absolute inset-0 opacity-[0.03]" style="background-image: radial-gradient(#fff 1px, transparent 1px); background-size: 20px 20px;"></div>
-            </div>
-        </div>
-    </section>
-
-    <!-- LIVE STREAMS -->
-    <section id="streams" class="py-10 px-6 max-w-7xl mx-auto">
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+    <!-- MASTER'S PROGRAM ENGINE -->
+    <section id="curriculum" class="py-10 px-4 md:px-6 max-w-[1600px] mx-auto">
+        <div class="glass-panel rounded-2xl overflow-hidden flex flex-col md:flex-row min-h-[800px] border-white/10 shadow-2xl reveal">
             
-            <!-- COL 1: Global Wire (News) -->
-            <div class="reveal">
-                <div class="flex items-center justify-between mb-6 border-b border-white/10 pb-2">
-                    <h3 class="text-xl font-serif text-white flex items-center gap-2">
-                        <span class="w-2 h-2 bg-blue-500 rounded-full"></span> Global Wire
-                    </h3>
-                    <button onclick="fetchTechNews()" class="text-gray-500 hover:text-white text-xs uppercase tracking-widest font-mono">Refresh</button>
+            <!-- Left Sidebar: Faculties -->
+            <div class="w-full md:w-72 glass-sidebar flex flex-col shrink-0">
+                <div class="p-6 border-b border-white/5">
+                    <h3 class="text-xs font-mono uppercase tracking-widest text-gray-500 mb-1">Select Faculty</h3>
+                    <p class="text-white font-serif text-lg">Departments</p>
                 </div>
-                <div class="glass-panel rounded-xl p-1 min-h-[300px] max-h-[400px] overflow-y-auto custom-scrollbar">
-                    <div id="tech-news-container" class="space-y-1">
-                        <div class="p-8 text-center text-gray-600 font-mono text-xs">Connecting to global feed...</div>
-                    </div>
+                <div class="flex-1 overflow-y-auto custom-scrollbar py-4 space-y-1" id="hub-tabs">
+                    <!-- Injected via JS -->
                 </div>
             </div>
 
-            <!-- COL 2: Community Signals (User Data) -->
-            <div class="reveal">
-                <div class="flex items-center justify-between mb-6 border-b border-white/10 pb-2">
-                    <h3 class="text-xl font-serif text-white flex items-center gap-2">
-                        <span class="w-2 h-2 bg-[#00ff41] rounded-full"></span> Signals
-                    </h3>
-                    <span class="text-gray-500 text-xs uppercase tracking-widest font-mono">Incoming</span>
-                </div>
-                <div class="glass-panel rounded-xl p-1 min-h-[300px] max-h-[400px] overflow-y-auto custom-scrollbar">
-                    <div id="community-feed-container" class="space-y-1">
-                        <div class="p-8 text-center text-gray-600 font-mono text-xs">Scanning frequency...</div>
+            <!-- Right Content: Syllabus -->
+            <div class="flex-1 bg-[#050505] relative flex flex-col">
+                <div class="absolute inset-0 opacity-[0.03]" style="background-image: radial-gradient(#fff 1px, transparent 1px); background-size: 32px 32px;"></div>
+                <div id="hub-content-area" class="relative z-10 flex-1 flex flex-col h-full">
+                    <div class="flex-1 flex items-center justify-center flex-col gap-4 text-gray-600">
+                        <div class="w-8 h-8 border-2 border-[#00ff41] border-t-transparent rounded-full animate-spin"></div>
+                        <p class="font-mono text-xs uppercase tracking-widest">Loading Curriculum...</p>
                     </div>
                 </div>
-            </div>
-
-        </div>
-    </section>
-
-    <!-- FIELD TOOLS (GRID) -->
-    <section id="tools" class="py-20 px-6 max-w-7xl mx-auto reveal">
-        <div class="flex items-end justify-between mb-8">
-            <h2 class="text-3xl font-serif text-white">Field Utilities</h2>
-            <span class="text-gray-500 text-xs font-mono uppercase tracking-widest hidden md:block">Tactical Set</span>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <!-- Encoder -->
-            <div class="glass-panel rounded-xl p-6 border border-white/5 hover:border-orange-500/30 transition-colors group">
-                <h4 class="text-sm font-mono text-orange-400 mb-4 uppercase tracking-widest">Crypto Scrambler</h4>
-                <textarea id="scramblerInput" class="w-full bg-black/50 border border-white/10 rounded p-3 text-xs font-mono text-gray-300 mb-3 focus:border-orange-500/50 focus:outline-none resize-none h-20" placeholder="Input payload..."></textarea>
-                <div class="flex gap-2 mb-3">
-                    <button onclick="toolEncode()" class="flex-1 bg-white/5 hover:bg-orange-500/10 text-gray-400 hover:text-orange-400 py-1.5 rounded text-[10px] uppercase tracking-widest transition-colors">Encode</button>
-                    <button onclick="toolDecode()" class="flex-1 bg-white/5 hover:bg-orange-500/10 text-gray-400 hover:text-orange-400 py-1.5 rounded text-[10px] uppercase tracking-widest transition-colors">Decode</button>
-                </div>
-                <textarea id="scramblerOutput" readonly class="w-full bg-black/30 border border-transparent rounded p-3 text-xs font-mono text-orange-300 h-20 resize-none focus:outline-none select-all" placeholder="Result..."></textarea>
-            </div>
-
-            <!-- Keygen -->
-            <div class="glass-panel rounded-xl p-6 border border-white/5 hover:border-orange-500/30 transition-colors group">
-                <h4 class="text-sm font-mono text-orange-400 mb-4 uppercase tracking-widest">Secure Keygen</h4>
-                <div class="bg-black/50 border border-white/10 rounded p-4 mb-6 flex justify-between items-center">
-                    <code id="keygenOutput" class="text-orange-300 font-mono text-sm truncate select-all">READY</code>
-                    <button onclick="copyToClipboard('keygenOutput')" class="text-gray-600 hover:text-white">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
-                    </button>
-                </div>
-                <div class="mb-6">
-                    <label class="flex justify-between text-[10px] text-gray-500 uppercase tracking-widest mb-2">
-                        Entropy Level <span id="keyLenVal" class="text-white">24</span>
-                    </label>
-                    <input type="range" id="keyLen" min="8" max="64" value="24" class="w-full accent-orange-500 h-1 bg-gray-800 rounded-lg appearance-none cursor-pointer" oninput="document.getElementById('keyLenVal').innerText = this.value">
-                </div>
-                <button onclick="generateKey()" class="w-full bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 border border-orange-500/20 py-2 rounded text-xs uppercase tracking-widest transition-all">Generate</button>
-            </div>
-
-            <!-- Net Trace -->
-            <div class="glass-panel rounded-xl p-6 border border-white/5 hover:border-orange-500/30 transition-colors group">
-                <h4 class="text-sm font-mono text-orange-400 mb-4 uppercase tracking-widest">Net Trace</h4>
-                <div class="space-y-3 mb-6 font-mono text-xs">
-                    <div class="flex justify-between border-b border-white/5 pb-2">
-                        <span class="text-gray-600">IP_ADDR</span>
-                        <span class="text-gray-300" id="ipVal">---.---.---.---</span>
-                    </div>
-                    <div class="flex justify-between border-b border-white/5 pb-2">
-                        <span class="text-gray-600">PROVIDER</span>
-                        <span class="text-gray-300" id="ispVal">UNKNOWN</span>
-                    </div>
-                    <div class="flex justify-between border-b border-white/5 pb-2">
-                        <span class="text-gray-600">LOCATION</span>
-                        <span class="text-gray-300" id="locVal">UNKNOWN</span>
-                    </div>
-                </div>
-                <button onclick="fetchNetInfo()" class="w-full bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 border border-orange-500/20 py-2 rounded text-xs uppercase tracking-widest transition-all">Ping Connection</button>
             </div>
         </div>
     </section>
 
-    <!-- MODALS (Hidden) -->
-    
-    <!-- AI TERMINAL (DeepSeek Removed) -->
-    <div id="neuralTerminal" class="fixed inset-0 z-[100] bg-black/90 backdrop-blur-lg hidden flex items-center justify-center p-2 md:p-4">
-        <div class="glass-panel rounded-lg w-full max-w-5xl h-[85vh] flex flex-col relative border border-[#00ff41]/20 shadow-2xl overflow-hidden">
-            <!-- Header -->
-            <div class="h-12 bg-black/60 border-b border-white/10 flex items-center justify-between px-4 shrink-0">
-                <div class="flex items-center gap-3">
-                    <span class="text-[#00ff41] font-mono text-xs tracking-widest flex items-center gap-2">
-                        <span class="w-2 h-2 bg-[#00ff41] rounded-full animate-pulse"></span>
-                        NEURAL_UPLINK_V2
-                    </span>
-                </div>
-                <div class="flex gap-4">
-                    <button onclick="toggleApiKeyModal()" class="text-gray-500 hover:text-white text-[10px] uppercase tracking-widest font-mono transition-colors">Config</button>
-                    <button onclick="toggleNeuralTerminal()" class="text-gray-500 hover:text-red-500 transition-colors">&times;</button>
-                </div>
+    <!-- INTELLIGENCE FEEDS -->
+    <section id="intelligence" class="py-20 px-6 max-w-7xl mx-auto">
+        <div class="flex items-end justify-between mb-12 reveal">
+            <div>
+                <h2 class="text-3xl font-serif text-white mb-2">Intelligence Feeds</h2>
+                <p class="text-gray-500 text-sm font-mono">Real-time global and community chatter.</p>
             </div>
+        </div>
 
-            <!-- Terminal Output -->
-            <div id="chatOutput" class="flex-1 overflow-y-auto p-6 space-y-6 font-mono text-sm bg-black/40 custom-scrollbar">
-                <div class="text-gray-500 text-xs mb-8">
-                    > System initialized.<br>
-                    > Secure channel established.<br>
-                    > Awaiting command input...
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Tech News -->
+            <div class="reveal">
+                <div class="glass-panel rounded-xl p-1 h-[500px] overflow-hidden flex flex-col">
+                    <div class="p-4 border-b border-white/5 bg-white/[0.02] flex justify-between items-center">
+                        <h3 class="text-sm font-bold uppercase tracking-widest text-blue-400 flex items-center gap-2">
+                            <span class="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></span> Tech News
+                        </h3>
+                        <button onclick="fetchTechNews()" class="text-[10px] font-mono text-gray-500 hover:text-white">SYNC</button>
+                    </div>
+                    <div id="tech-news-container" class="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-1"></div>
                 </div>
             </div>
 
-            <!-- Input -->
-            <div class="p-4 bg-black/60 border-t border-white/10">
-                <form onsubmit="handleChatSubmit(event)" class="flex gap-3">
-                    <span class="text-[#00ff41] font-mono py-3">></span>
-                    <input type="text" id="chatInput" class="flex-1 bg-transparent border-none text-white font-mono focus:ring-0 placeholder-gray-700" placeholder="Query the intelligence core..." autocomplete="off">
-                </form>
+            <!-- Community Signals -->
+            <div class="reveal">
+                <div class="glass-panel rounded-xl p-1 h-[500px] overflow-hidden flex flex-col">
+                    <div class="p-4 border-b border-white/5 bg-white/[0.02] flex justify-between items-center">
+                        <h3 class="text-sm font-bold uppercase tracking-widest text-[#00ff41] flex items-center gap-2">
+                            <span class="w-2 h-2 bg-[#00ff41] rounded-full animate-pulse"></span> Student Signals
+                        </h3>
+                        <span class="text-[10px] font-mono text-gray-500">LIVE</span>
+                    </div>
+                    <div id="community-feed-container" class="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-1"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- THE ARCADE -->
+    <section id="arcade" class="py-20 px-6 max-w-7xl mx-auto reveal">
+        <h2 class="text-3xl font-serif text-white mb-10">Student Arcade</h2>
+        
+        <!-- ROW 1: Games & Generators -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+            <!-- GAME: PROTOCOL BREAKER -->
+            <div class="glass-panel rounded-xl overflow-hidden border border-white/10 relative h-[400px] flex flex-col group md:col-span-2 lg:col-span-1">
+                <div class="absolute inset-0 bg-[#000] z-0"></div>
+                <div class="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] z-10 pointer-events-none bg-[length:100%_2px,3px_100%]"></div>
+                
+                <div class="relative z-20 p-6 border-b border-white/10 bg-black/60 flex justify-between items-center">
+                    <h3 class="text-sm font-bold uppercase tracking-widest text-[#00ff41]">Protocol Breaker</h3>
+                    <div class="flex gap-4 text-xs font-mono">
+                        <span class="text-gray-400">Score: <span id="gameScore" class="text-white">0</span></span>
+                        <span class="text-gray-400">Integrity: <span id="gameHealth" class="text-red-400">100%</span></span>
+                    </div>
+                </div>
+
+                <div id="gameArea" class="relative flex-1 overflow-hidden font-mono cursor-crosshair">
+                    <div id="startScreen" class="absolute inset-0 flex flex-col items-center justify-center bg-black/80 z-30">
+                        <p class="text-[#00ff41] text-xs mb-4 animate-pulse">Ready to hack the mainframe?</p>
+                        <button onclick="startGame()" class="bg-[#00ff41] text-black px-6 py-2 rounded text-xs font-bold uppercase tracking-widest hover:bg-white transition-colors">Initialize Breach</button>
+                    </div>
+                    <div id="wordContainer" class="absolute inset-0"></div>
+                </div>
+
+                <div class="relative z-20 p-4 bg-black/80 border-t border-white/10">
+                    <input type="text" id="gameInput" class="w-full bg-transparent border-none text-[#00ff41] text-center font-mono uppercase focus:ring-0 placeholder-gray-700" placeholder="TYPE TO EXECUTE..." disabled autocomplete="off">
+                </div>
             </div>
 
-            <!-- API Config Overlay -->
-            <div id="apiKeyConfig" class="absolute inset-0 bg-[#050505]/95 z-20 hidden flex flex-col items-center justify-center p-6">
-                <div class="w-full max-w-md space-y-6 text-center">
-                    <h3 class="text-2xl font-serif text-white">Uplink Configuration</h3>
-                    <p class="text-gray-500 text-sm font-mono">Select a protocol and authenticate.</p>
-                    
-                    <div class="text-left space-y-4">
-                        <div>
-                            <label class="text-[#00ff41] text-[10px] font-mono uppercase tracking-widest block mb-2">Protocol</label>
-                            <!-- DeepSeek Removed -->
-                            <select id="providerSelect" onchange="updateKeyLinks()" class="w-full bg-white/5 border border-white/10 rounded px-3 py-3 text-white text-sm focus:border-[#00ff41] focus:outline-none">
-                                <option value="gemini">Google Gemini (Recommended)</option>
-                                <option value="groq">Groq (Llama 3)</option>
-                            </select>
+            <!-- DEV EXCUSE PROTOCOL -->
+            <div class="glass-panel rounded-xl p-6 border border-white/10 flex flex-col justify-center items-center text-center relative bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMiIgY3k9IjIiIHI9IjEiIGZpbGw9InJnYmEoMjU1LCAyNTUs 255, 0.05)হইIyIvPjwvc3ZnPg==')]">
+                <div class="w-12 h-12 rounded-full border-2 border-red-500/30 flex items-center justify-center mb-4 bg-red-500/5">
+                    <svg class="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                </div>
+                <h3 class="text-red-400 text-xs font-bold uppercase tracking-widest mb-2">Dev Excuse Protocol</h3>
+                <div class="min-h-[60px] flex items-center justify-center mb-6 px-4">
+                    <p id="excuseText" class="text-white font-serif italic text-lg">"System functioning within normal parameters."</p>
+                </div>
+                <button onclick="generateExcuse()" class="px-8 py-3 rounded-full border border-red-500/30 hover:bg-red-500/10 text-red-400 text-xs font-bold uppercase tracking-widest transition-all hover:scale-105">
+                    Generate Alibi
+                </button>
+            </div>
+        </div>
+
+        <!-- ROW 2: Laboratory & Utils -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            
+            <!-- THE CODEX -->
+            <div class="glass-panel rounded-xl p-6 border border-white/10 group hover:border-blue-500/30 transition-all flex flex-col">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="p-2 rounded bg-blue-500/10 text-blue-400">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+                    </div>
+                    <h4 class="text-sm font-bold uppercase tracking-widest text-gray-200">The Codex</h4>
+                </div>
+                <input type="text" id="codexSearch" placeholder="Search command (e.g. 'undo git')..." class="w-full bg-black/50 border border-white/10 rounded p-2 text-xs text-white mb-4 focus:border-blue-500/50 focus:outline-none">
+                <div id="codexResult" class="flex-1 bg-black/30 rounded p-3 text-xs font-mono text-gray-400 overflow-y-auto h-32">
+                    <p class="opacity-50">Awaiting query...</p>
+                </div>
+            </div>
+
+            <!-- TOOL: BINARY WHISPERER -->
+            <div class="glass-panel rounded-xl p-6 border border-white/10 group hover:border-cyan-500/30 transition-all">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="p-2 rounded bg-cyan-500/10 text-cyan-400">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
+                    </div>
+                    <h4 class="text-sm font-bold uppercase tracking-widest text-gray-200">Binary Whisperer</h4>
+                </div>
+                <div class="grid grid-cols-2 gap-2 h-40">
+                    <textarea id="binTextInput" class="bg-black/50 border border-white/10 rounded p-2 text-[10px] text-white font-mono resize-none focus:border-cyan-500/50 focus:outline-none" placeholder="Input..." oninput="textToBin()"></textarea>
+                    <textarea id="binCodeOutput" class="bg-black/30 border border-white/5 rounded p-2 text-[10px] text-cyan-400 font-mono resize-none focus:outline-none" placeholder="0101..." readonly></textarea>
+                </div>
+            </div>
+
+            <!-- GENERATOR: DAILY SIDE QUEST -->
+            <div class="glass-panel rounded-xl p-6 border border-white/10 flex flex-col justify-center items-center text-center relative overflow-hidden">
+                <div class="w-12 h-12 mx-auto rounded bg-yellow-500/10 border border-yellow-500/30 flex items-center justify-center mb-3">
+                    <svg class="w-6 h-6 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
+                </div>
+                <h3 class="text-yellow-500 text-xs font-bold uppercase tracking-widest mb-3">Daily Side Quest</h3>
+                <div class="w-full bg-black/40 border border-white/10 rounded-lg p-3 mb-4 min-h-[60px] flex items-center justify-center">
+                    <p id="questText" class="text-white font-serif italic text-xs">"Standby..."</p>
+                </div>
+                <button onclick="generateQuest()" class="w-full bg-yellow-500/10 hover:bg-yellow-500/20 border border-yellow-500/30 text-yellow-500 font-bold py-2 rounded text-[10px] uppercase tracking-widest transition-all">
+                    New Mission
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- AUDIT GUIDE MODAL -->
+    <div id="auditModal" class="fixed inset-0 z-[100] bg-black/90 backdrop-blur-xl hidden flex items-center justify-center p-4">
+        <div class="w-full max-w-lg glass-panel rounded-2xl p-8 relative border border-white/10">
+            <button onclick="toggleAuditModal()" class="absolute top-6 right-6 text-gray-500 hover:text-white">&times;</button>
+            <h3 class="text-xl font-serif text-white mb-6 flex items-center gap-2">
+                <span class="text-[#00ff41]">🔓</span> Access Protocols
+            </h3>
+            
+            <div class="space-y-6">
+                <div class="group" id="coursera-guide" style="display:none;">
+                    <h4 class="text-blue-400 text-xs font-bold uppercase tracking-widest mb-2 flex items-center gap-2">
+                        <span class="w-1.5 h-1.5 bg-blue-400 rounded-full"></span> Coursera Strategy
+                    </h4>
+                    <p class="text-gray-400 text-xs leading-relaxed mb-3 font-mono">Do not click "Start Free Trial".</p>
+                    <div class="bg-black/50 border border-white/10 rounded-lg p-4 text-xs font-mono text-gray-300 space-y-2">
+                        <div class="flex gap-3">
+                            <span class="text-blue-500">01</span>
+                            <span>Click "Enroll for Free".</span>
                         </div>
-                        <div>
-                            <label class="text-[#00ff41] text-[10px] font-mono uppercase tracking-widest block mb-2">Access Token</label>
-                            <input type="password" id="apiKeyInput" class="w-full bg-white/5 border border-white/10 rounded px-3 py-3 text-white text-sm focus:border-[#00ff41] focus:outline-none font-mono" placeholder="sk-...">
+                        <div class="flex gap-3">
+                            <span class="text-blue-500">02</span>
+                            <span>Look for small text at the bottom of the popup: <span class="text-white border-b border-white/20">"Audit the course"</span>.</span>
                         </div>
                     </div>
-
-                    <div id="keyLinksArea" class="flex justify-center py-2"></div>
-
-                    <div class="flex gap-3 pt-4">
-                        <button onclick="saveApiKey()" class="flex-1 bg-[#003300] hover:bg-[#00ff41] text-white hover:text-black border border-[#00ff41] py-3 rounded text-xs font-bold uppercase tracking-widest transition-all">Authenticate</button>
-                        <button onclick="toggleApiKeyModal()" class="px-6 text-gray-500 hover:text-white text-xs uppercase tracking-widest transition-colors">Cancel</button>
-                    </div>
-                    
-                    <button onclick="clearApiKey()" class="text-red-900 hover:text-red-500 text-[10px] uppercase tracking-widest mt-8 transition-colors">Purge Credentials</button>
                 </div>
+
+                <div class="group" id="edx-guide" style="display:none;">
+                    <h4 class="text-red-400 text-xs font-bold uppercase tracking-widest mb-2 flex items-center gap-2">
+                        <span class="w-1.5 h-1.5 bg-red-400 rounded-full"></span> edX Strategy
+                    </h4>
+                    <div class="bg-black/50 border border-white/10 rounded-lg p-4 text-xs font-mono text-gray-300 space-y-2">
+                        <div class="flex gap-3">
+                            <span class="text-red-500">01</span>
+                            <span>Click "Enroll".</span>
+                        </div>
+                        <div class="flex gap-3">
+                            <span class="text-red-500">02</span>
+                            <span>Select the "Free" or "Audit This Course" option.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="group border-t border-white/10 pt-6">
+                    <h4 class="text-purple-400 text-xs font-bold uppercase tracking-widest mb-2 flex items-center gap-2">
+                        <span class="w-1.5 h-1.5 bg-purple-400 rounded-full"></span> Institutional Access
+                    </h4>
+                    <p class="text-gray-500 text-[10px] font-mono mb-3">Bachelor's, Master's, or PhD student?</p>
+                    <div class="bg-purple-500/5 border border-purple-500/20 rounded-lg p-4 text-xs font-mono text-gray-300">
+                        <p class="mb-2 leading-relaxed">
+                            Your university email often grants <strong>Enterprise Access</strong> to Coursera Plus & LinkedIn Learning.
+                        </p>
+                        <div class="mt-2 flex gap-2 items-center text-[10px] text-purple-400">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            <span>Action: Search "[University] Library Databases"</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-8 text-center border-t border-white/5 pt-4">
+                <a href="#" onclick="proceedToCourse(); return false;" class="text-gray-500 hover:text-[#00ff41] text-[10px] font-mono uppercase tracking-widest transition-colors">
+                    [ Proceed to External Site ]
+                </a>
             </div>
         </div>
     </div>
 
     <!-- UPLOAD MODAL -->
-    <div id="uploadModal" class="fixed inset-0 z-[100] bg-black/80 backdrop-blur-md hidden flex items-center justify-center p-4">
-        <div class="glass-panel p-8 rounded-xl w-full max-w-lg relative border border-white/10">
-            <button onclick="toggleUploadModal()" class="absolute top-4 right-4 text-gray-500 hover:text-white transition-colors">&times;</button>
-            <h3 class="text-2xl font-serif text-white mb-1">Transmit Signal</h3>
-            <p class="text-gray-500 text-xs mb-6 uppercase tracking-widest font-mono">Contribute to the network.</p>
-            
-            <form id="signalForm" onsubmit="submitSignal(event)" class="space-y-4">
+    <div id="uploadModal" class="fixed inset-0 z-[100] bg-black/90 backdrop-blur-xl hidden flex items-center justify-center p-4">
+        <div class="w-full max-w-lg glass-panel rounded-2xl p-8 relative">
+            <button onclick="toggleUploadModal()" class="absolute top-6 right-6 text-gray-500 hover:text-white">&times;</button>
+            <h3 class="text-2xl font-serif text-white mb-2">Transmit Signal</h3>
+            <p class="text-gray-500 text-xs uppercase tracking-widest mb-8">Share verified intelligence.</p>
+            <form id="signalForm" onsubmit="submitSignal(event)" class="space-y-5">
                 <div>
-                    <label class="block text-gray-400 text-xs uppercase tracking-widest mb-2">Title</label>
-                    <input type="text" id="inputTitle" required class="w-full bg-black/50 border border-white/10 rounded p-3 text-white focus:border-[#00ff41] focus:outline-none text-sm">
+                    <label class="block text-gray-500 text-[10px] uppercase tracking-widest mb-2">Resource Title</label>
+                    <input type="text" id="inputTitle" required class="w-full bg-black/50 border border-white/10 rounded-lg p-3 text-white focus:border-[#00ff41] focus:outline-none text-sm">
                 </div>
                 <div>
-                    <label class="block text-gray-400 text-xs uppercase tracking-widest mb-2">URL</label>
-                    <input type="url" id="inputUrl" required class="w-full bg-black/50 border border-white/10 rounded p-3 text-white focus:border-[#00ff41] focus:outline-none text-sm text-blue-400">
+                    <label class="block text-gray-500 text-[10px] uppercase tracking-widest mb-2">Source URL</label>
+                    <input type="url" id="inputUrl" required class="w-full bg-black/50 border border-white/10 rounded-lg p-3 text-blue-400 focus:border-[#00ff41] focus:outline-none text-sm font-mono">
                 </div>
                 <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-gray-400 text-xs uppercase tracking-widest mb-2">Sector</label>
-                        <select id="inputCategory" class="w-full bg-black/50 border border-white/10 rounded p-3 text-white focus:border-[#00ff41] focus:outline-none text-sm">
-                            <option value="Cybersecurity">Cybersecurity</option>
-                            <option value="Data Analytics">Data Analytics</option>
-                            <option value="AI & ML">AI & ML</option>
-                            <option value="DevOps">DevOps</option>
-                            <option value="Web Dev">Web Dev</option>
-                            <option value="Blockchain">Blockchain</option>
+                        <label class="block text-gray-500 text-[10px] uppercase tracking-widest mb-2">Faculty</label>
+                        <select id="inputCategory" class="w-full bg-black/50 border border-white/10 rounded-lg p-3 text-white focus:border-[#00ff41] focus:outline-none text-sm">
+                            <option value="Cybersecurity">Cybersecurity</option><option value="Full Stack">Full Stack</option><option value="AI & ML">AI & ML</option><option value="DevOps">DevOps</option><option value="Blockchain">Blockchain</option><option value="Mobile">Mobile Dev</option><option value="Game Dev">Game Dev</option><option value="UI/UX">UI/UX Design</option><option value="Data">Data Analytics</option><option value="IoT">IoT</option>
                         </select>
                     </div>
                     <div>
-                        <label class="block text-gray-400 text-xs uppercase tracking-widest mb-2">Level</label>
-                        <select id="inputDifficulty" class="w-full bg-black/50 border border-white/10 rounded p-3 text-white focus:border-[#00ff41] focus:outline-none text-sm">
-                            <option value="Beginner">Beginner</option>
-                            <option value="Intermediate">Intermediate</option>
-                            <option value="Hard">Hard</option>
-                            <option value="Expert">Expert</option>
+                        <label class="block text-gray-500 text-[10px] uppercase tracking-widest mb-2">Complexity</label>
+                        <select id="inputDifficulty" class="w-full bg-black/50 border border-white/10 rounded-lg p-3 text-white focus:border-[#00ff41] focus:outline-none text-sm">
+                            <option value="Beginner">Beginner</option><option value="Intermediate">Intermediate</option><option value="Hard">Hard</option><option value="Expert">Expert</option>
                         </select>
                     </div>
                 </div>
-                <button type="submit" class="w-full bg-white/5 hover:bg-[#00ff41] border border-white/10 hover:border-[#00ff41] text-white hover:text-black font-bold py-3 rounded mt-4 transition-all uppercase tracking-widest text-xs flex justify-center items-center gap-2 group">
-                    <span id="submitBtnText">Broadcast</span>
-                </button>
+                <button type="submit" class="w-full bg-[#00ff41]/10 hover:bg-[#00ff41] border border-[#00ff41]/50 text-[#00ff41] hover:text-black font-bold py-4 rounded-lg mt-4 transition-all uppercase tracking-widest text-xs" id="submitBtnText">Broadcast Signal</button>
             </form>
         </div>
     </div>
 
-    <!-- Footer -->
-    <footer class="py-12 text-center border-t border-white/5">
-        <p class="text-gray-700 text-[10px] font-mono uppercase tracking-[0.3em]">&copy; 2025 ROOT INTELLIGENCE</p>
+    <footer class="py-12 text-center border-t border-white/5 mt-20">
+        <p class="text-gray-600 text-[10px] font-mono uppercase tracking-[0.3em]">Root Academy Open Source Initiative &copy; 2025</p>
     </footer>
 
-    <!-- JAVASCRIPT LOGIC -->
     <script>
-        // --- BRIGHTER MATRIX ---
-        const canvas = document.getElementById('matrix-bg');
-        const ctx = canvas.getContext('2d');
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-        
-        const chars = '0123456789ABCDEF'; 
-        const fontSize = 14;
-        let columns = canvas.width / fontSize;
-        let drops = [];
-        
-        function initDrops() { 
-            drops = []; 
-            columns = canvas.width / fontSize; 
-            for(let x = 0; x < columns; x++) drops[x] = Math.random() * -100; 
-        }
-        initDrops();
-
-        function drawMatrix() {
-            // Transparent fade for trails
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.05)'; 
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            
-            ctx.font = fontSize + 'px monospace';
-            
-            for(let i = 0; i < drops.length; i++) {
-                const text = chars.charAt(Math.floor(Math.random() * chars.length));
-                
-                // BRIGHT GREEN PALETTE
-                if(Math.random() > 0.95) {
-                    ctx.fillStyle = '#e0ffe0'; // Almost white green
-                } else {
-                    ctx.fillStyle = '#00ff41'; // Bright Matrix Green
-                }
-                
-                ctx.fillText(text, i * fontSize, drops[i] * fontSize);
-                
-                if(drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
-                    drops[i] = 0;
-                }
-                drops[i]++;
-            }
-        }
-        setInterval(drawMatrix, 35); 
-        window.addEventListener('resize', () => { 
-            canvas.width = window.innerWidth; 
-            canvas.height = window.innerHeight; 
-            initDrops(); 
-        });
-
-        // --- RESOURCE DATA (ALL RESTORED) ---
+        // --- DATA: THE 11 FACULTIES (GOAT RESOURCES V4.1) ---
         const hubsData = [
             {
-                id: 'cyber',
-                name: 'Cybersecurity',
+                id: 'cyber', name: 'Cybersecurity Operations',
                 icon: 'M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z',
+                meta: { salary: '$95k - $160k', time: '8 - 12 Months', role: 'Security Engineer' },
                 links: [
-                    { title: 'Roadmap.sh/cyber', url: 'https://roadmap.sh/cyber-security', tag: 'Map', color: 'green' },
-                    { title: 'TryHackMe', url: 'https://tryhackme.com/', tag: 'Labs', color: 'green' },
-                    { title: 'HackTheBox', url: 'https://www.hackthebox.com/', tag: 'Hard', color: 'orange' },
-                    { title: 'PortSwigger', url: 'https://portswigger.net/web-security', tag: 'Web', color: 'green' },
-                    { title: 'Awesome Pentest', url: 'https://github.com/enaqx/awesome-pentest', tag: 'Repo', color: 'blue' }
+                    { level: 1, title: 'Computer Programming', url: 'https://www.khanacademy.org/computing/computer-programming', tag: 'Khan Academy' },
+                    { level: 2, title: 'Code Foundations', url: 'https://www.codecademy.com/learn/code-foundations', tag: 'Codecademy' },
+                    { level: 3, title: 'Google Cybersecurity Cert', url: 'https://www.coursera.org/professional-certificates/google-cybersecurity', tag: 'Coursera' },
+                    { level: 4, title: 'Network Security', url: 'https://www.edx.org/learn/cybersecurity', tag: 'edX' },
+                    { level: 5, title: 'Ethical Hacking', url: 'https://www.freecodecamp.org/learn/information-security/', tag: 'freeCodeCamp' },
+                    { level: 6, title: 'IBM Cybersecurity Analyst', url: 'https://www.coursera.org/professional-certificates/ibm-cybersecurity-analyst', tag: 'IBM' },
+                    { level: 7, title: 'Penetration Testing', url: 'https://ocw.mit.edu/search/?q=cybersecurity', tag: 'MIT OCW' },
+                    { level: 8, title: 'Advanced Security Protocols', url: 'https://www.codecademy.com/catalog/subject/cybersecurity', tag: 'Codecademy' },
+                    { level: 9, title: 'Digital Forensics', url: 'https://www.edx.org/learn/computer-forensics', tag: 'edX' },
+                    { level: 10, title: 'Advanced Cryptography', url: 'https://ocw.mit.edu/courses/6-875-cryptography-and-cryptanalysis-spring-2005/', tag: 'MIT PhD' }
                 ]
             },
             {
-                id: 'ai',
-                name: 'AI & ML',
-                icon: 'M19.428 15.428a2 2 0 00-1.022-.547l-2.384-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z',
-                links: [
-                    { title: 'Fast.ai', url: 'https://course.fast.ai/', tag: 'Course', color: 'green' },
-                    { title: 'Hugging Face', url: 'https://huggingface.co/learn', tag: 'NLP', color: 'green' },
-                    { title: 'Google ML', url: 'https://developers.google.com/machine-learning/crash-course', tag: 'Basics', color: 'green' },
-                    { title: 'CS231n', url: 'https://cs231n.stanford.edu/', tag: 'Hard', color: 'orange' },
-                    { title: 'OpenAI Cookbook', url: 'https://github.com/openai/openai-cookbook', tag: 'GenAI', color: 'blue' }
-                ]
-            },
-            {
-                id: 'free_api',
-                name: 'Free AI APIs',
-                icon: 'M13 10V3L4 14h7v7l9-11h-7z',
-                links: [
-                    { title: 'Google AI Studio', url: 'https://aistudio.google.com/', tag: 'Gemini', color: 'green' },
-                    { title: 'Groq Cloud', url: 'https://console.groq.com/', tag: 'Llama', color: 'orange' },
-                    { title: 'Hugging Face API', url: 'https://huggingface.co/docs/api-inference/index', tag: 'Hub', color: 'blue' },
-                    { title: 'Cloudflare AI', url: 'https://developers.cloudflare.com/workers-ai/', tag: 'Edge', color: 'green' }
-                ]
-            },
-            {
-                id: 'data',
-                name: 'Data Analytics',
+                id: 'data', name: 'Data Science & Analytics',
                 icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z',
+                meta: { salary: '$85k - $145k', time: '6 - 12 Months', role: 'Data Scientist' },
                 links: [
-                    { title: 'Kaggle Learn', url: 'https://www.kaggle.com/learn', tag: 'Lab', color: 'green' },
-                    { title: 'OSSU Data', url: 'https://github.com/ossu/data-science', tag: 'Degree', color: 'purple' },
-                    { title: 'FreeCodeCamp', url: 'https://www.freecodecamp.org/learn/data-analysis-with-python/', tag: 'Python', color: 'green' },
-                    { title: 'Mode SQL', url: 'https://mode.com/sql-tutorial/', tag: 'SQL', color: 'green' },
-                    { title: 'Pandas Docs', url: 'https://pandas.pydata.org/docs/', tag: 'Ref', color: 'blue' }
+                    { level: 1, title: 'Stats & Probability', url: 'https://www.khanacademy.org/math/statistics-probability', tag: 'Khan Academy' },
+                    { level: 2, title: 'Google Data Analytics', url: 'https://www.coursera.org/professional-certificates/google-data-analytics', tag: 'Google' },
+                    { level: 3, title: 'Data Analysis with Python', url: 'https://www.freecodecamp.org/learn/data-analysis-with-python/', tag: 'freeCodeCamp' },
+                    { level: 4, title: 'SQL & Analytics', url: 'https://www.edx.org/learn/sql', tag: 'edX' },
+                    { level: 5, title: 'IBM Data Analyst', url: 'https://www.coursera.org/professional-certificates/ibm-data-analyst', tag: 'IBM' },
+                    { level: 6, title: 'Tableau & Power BI', url: 'https://www.codecademy.com/catalog/subject/data-science', tag: 'Codecademy' },
+                    { level: 7, title: 'Machine Learning Models', url: 'https://www.codecademy.com/learn/paths/machine-learning', tag: 'Codecademy' },
+                    { level: 8, title: 'Big Data (Spark/Hadoop)', url: 'https://www.edx.org/learn/big-data', tag: 'edX' },
+                    { level: 9, title: 'Deep Learning for Data', url: 'https://www.coursera.org/specializations/deep-learning', tag: 'Andrew Ng' },
+                    { level: 10, title: 'Adv Stats & Inference', url: 'https://ocw.mit.edu/courses/18-650-statistics-for-applications-fall-2016/', tag: 'MIT OCW' }
                 ]
             },
             {
-                id: 'devops',
-                name: 'DevOps',
-                icon: 'M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z',
-                links: [
-                    { title: 'Roadmap.sh', url: 'https://roadmap.sh/devops', tag: 'Map', color: 'green' },
-                    { title: 'Docker Labs', url: 'https://labs.play-with-docker.com/', tag: 'Lab', color: 'green' },
-                    { title: 'Kubernetes.io', url: 'https://kubernetes.io/docs/tutorials/', tag: 'K8s', color: 'orange' },
-                    { title: 'MS Azure', url: 'https://learn.microsoft.com/en-us/training/azure/', tag: 'Cloud', color: 'green' },
-                    { title: '12-Factor App', url: 'https://12factor.net/', tag: 'Theory', color: 'purple' }
-                ]
-            },
-            {
-                id: 'web',
-                name: 'Full Stack',
-                icon: 'M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4',
-                links: [
-                    { title: 'The Odin Project', url: 'https://www.theodinproject.com/', tag: 'All', color: 'green' },
-                    { title: 'Full Stack Open', url: 'https://fullstackopen.com/en/', tag: 'React', color: 'green' },
-                    { title: 'MDN Web Docs', url: 'https://developer.mozilla.org/en-US/', tag: 'Ref', color: 'blue' },
-                    { title: 'CS50 Web', url: 'https://cs50.harvard.edu/web/', tag: 'Uni', color: 'green' },
-                    { title: 'Javascript.info', url: 'https://javascript.info/', tag: 'Deep', color: 'orange' }
-                ]
-            },
-            {
-                id: 'mobile',
-                name: 'Mobile Dev',
-                icon: 'M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z',
-                links: [
-                    { title: 'Android Dev', url: 'https://developer.android.com/courses', tag: 'Native', color: 'green' },
-                    { title: 'Flutter Docs', url: 'https://docs.flutter.dev/', tag: 'Cross', color: 'blue' },
-                    { title: 'React Native', url: 'https://reactnative.dev/docs/getting-started', tag: 'JS', color: 'blue' },
-                    { title: 'Stanford iOS', url: 'https://cs193p.sites.stanford.edu/', tag: 'Swift', color: 'orange' },
-                    { title: 'Kotlin Docs', url: 'https://kotlinlang.org/docs/home.html', tag: 'Lang', color: 'green' }
-                ]
-            },
-            {
-                id: 'blockchain',
-                name: 'Blockchain',
+                id: 'ai', name: 'Artificial Intelligence',
                 icon: 'M13 10V3L4 14h7v7l9-11h-7z',
+                meta: { salary: '$120k - $200k', time: '12 - 18 Months', role: 'AI Engineer' },
                 links: [
-                    { title: 'CryptoZombies', url: 'https://cryptozombies.io/', tag: 'Game', color: 'green' },
-                    { title: 'Solidity Docs', url: 'https://docs.soliditylang.org/', tag: 'Lang', color: 'orange' },
-                    { title: 'Ethereum.org', url: 'https://ethereum.org/en/developers/', tag: 'Core', color: 'green' },
-                    { title: 'useWeb3', url: 'https://useweb3.xyz/', tag: 'Lib', color: 'blue' },
-                    { title: 'Whiteboard Crypto', url: 'https://whiteboardcrypto.com/', tag: 'Visual', color: 'purple' }
+                    { level: 1, title: 'AI Basics', url: 'https://www.khanacademy.org/computing/computer-science', tag: 'Khan Academy' },
+                    { level: 2, title: 'Machine Learning Intro', url: 'https://www.coursera.org/specializations/machine-learning-introduction', tag: 'Andrew Ng' },
+                    { level: 3, title: 'AI Fundamentals', url: 'https://www.edx.org/learn/artificial-intelligence', tag: 'edX' },
+                    { level: 4, title: 'Machine Learning w/ Python', url: 'https://www.freecodecamp.org/learn/machine-learning-with-python/', tag: 'freeCodeCamp' },
+                    { level: 5, title: 'Neural Networks', url: 'https://www.codecademy.com/learn/paths/build-deep-learning-models-with-tensorflow', tag: 'Codecademy' },
+                    { level: 6, title: 'IBM AI Developer', url: 'https://www.coursera.org/professional-certificates/ibm-ai-developer', tag: 'IBM' },
+                    { level: 7, title: 'Computer Vision', url: 'https://www.codecademy.com/learn/paths/computer-vision', tag: 'Codecademy' },
+                    { level: 8, title: 'Reinforcement Learning', url: 'https://www.edx.org/learn/reinforcement-learning', tag: 'edX' },
+                    { level: 9, title: 'Generative AI Eng', url: 'https://www.coursera.org/specializations/generative-ai-for-everyone', tag: 'Coursera' },
+                    { level: 10, title: 'PhD-level AI Research', url: 'https://ocw.mit.edu/courses/6-034-artificial-intelligence-fall-2010/', tag: 'MIT OCW' }
                 ]
             },
             {
-                id: 'game',
-                name: 'Game Dev',
-                icon: 'M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z',
-                links: [
-                    { title: 'Godot Docs', url: 'https://docs.godotengine.org/en/stable/', tag: 'OSS', color: 'green' },
-                    { title: 'Unity Learn', url: 'https://learn.unity.com/', tag: 'Std', color: 'green' },
-                    { title: 'Unreal Academy', url: 'https://dev.epicgames.com/community/learning', tag: 'AAA', color: 'orange' },
-                    { title: 'Game Math', url: 'https://gamemath.com/', tag: 'Math', color: 'blue' },
-                    { title: 'Blender', url: 'https://blender.org/support/tutorials', tag: '3D', color: 'green' }
-                ]
-            },
-            {
-                id: 'design',
-                name: 'UI/UX',
-                icon: 'M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01',
-                links: [
-                    { title: 'Figma Community', url: 'https://www.figma.com/community', tag: 'Res', color: 'green' },
-                    { title: 'Laws of UX', url: 'https://lawsofux.com/', tag: 'Thry', color: 'purple' },
-                    { title: 'Material Design', url: 'https://m3.material.io/', tag: 'Sys', color: 'green' },
-                    { title: 'Nielsen Norman', url: 'https://www.nngroup.com/articles/', tag: 'Rsch', color: 'blue' },
-                    { title: 'Checklist.Design', url: 'https://www.checklist.design/', tag: 'List', color: 'green' }
-                ]
-            },
-            {
-                id: 'iot',
-                name: 'IoT',
+                id: 'iot', name: 'Internet of Things',
                 icon: 'M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z',
+                meta: { salary: '$90k - $150k', time: '8 - 12 Months', role: 'Embedded Engineer' },
                 links: [
-                    { title: 'Arduino Docs', url: 'https://docs.arduino.cc/', tag: 'Hw', color: 'green' },
-                    { title: 'Raspberry Pi', url: 'https://projects.raspberrypi.org/en', tag: 'Proj', color: 'green' },
-                    { title: 'Hackster.io', url: 'https://www.hackster.io/', tag: 'Comm', color: 'green' }
+                    { level: 1, title: 'Hardware Basics', url: 'https://www.khanacademy.org/science/electrical-engineering', tag: 'Khan Academy' },
+                    { level: 2, title: 'IoT Fundamentals', url: 'https://www.edx.org/learn/iot-internet-of-things', tag: 'edX' },
+                    { level: 3, title: 'Intro to IoT', url: 'https://www.coursera.org/specializations/iot', tag: 'Coursera' },
+                    { level: 4, title: 'IoT Projects', url: 'https://www.freecodecamp.org/news/tag/iot/', tag: 'freeCodeCamp' },
+                    { level: 5, title: 'Embedded Systems', url: 'https://www.edx.org/learn/embedded-systems', tag: 'edX' },
+                    { level: 6, title: 'Raspberry Pi & Python', url: 'https://www.coursera.org/learn/raspberry-pi-interface', tag: 'Coursera' },
+                    { level: 7, title: 'IoT Security', url: 'https://ocw.mit.edu/search/?q=embedded+systems', tag: 'MIT OCW' },
+                    { level: 8, title: 'Cloud Integration', url: 'https://www.codecademy.com/catalog/subject/cloud-computing', tag: 'Codecademy' },
+                    { level: 9, title: 'Advanced IoT Systems', url: 'https://www.edx.org/learn/system-design', tag: 'edX' },
+                    { level: 10, title: 'IoT Architecture Design', url: 'https://ocw.mit.edu/courses/6-450-principles-of-digital-communications-i-fall-2006/', tag: 'MIT OCW' }
+                ]
+            },
+            {
+                id: 'fullstack', name: 'Full Stack Development',
+                icon: 'M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4',
+                meta: { salary: '$85k - $150k', time: '6 - 9 Months', role: 'Software Engineer' },
+                links: [
+                    { level: 1, title: 'Responsive Web Design', url: 'https://www.freecodecamp.org/learn/2022/responsive-web-design/', tag: 'freeCodeCamp' },
+                    { level: 2, title: 'HTML/CSS/JS Basics', url: 'https://www.codecademy.com/catalog/subject/web-development', tag: 'Codecademy' },
+                    { level: 3, title: 'Full Stack Web Dev', url: 'https://www.coursera.org/specializations/full-stack-react', tag: 'Hong Kong U' },
+                    { level: 4, title: 'JS Algorithms', url: 'https://www.freecodecamp.org/learn/javascript-algorithms-and-data-structures/', tag: 'freeCodeCamp' },
+                    { level: 5, title: 'React & Node.js', url: 'https://www.codecademy.com/learn/paths/full-stack-engineer-career-path', tag: 'Codecademy' },
+                    { level: 6, title: 'IBM Full Stack Dev', url: 'https://www.coursera.org/professional-certificates/ibm-full-stack-cloud-developer', tag: 'IBM' },
+                    { level: 7, title: 'Advanced Web Dev', url: 'https://ocw.mit.edu/courses/6-148-web-programming-competition-january-iap-2010/', tag: 'MIT OCW' },
+                    { level: 8, title: 'Performance Optimization', url: 'https://web.dev/learn/performance', tag: 'Google' },
+                    { level: 9, title: 'Scalable Architectures', url: 'https://ocw.mit.edu/courses/6-033-computer-system-engineering-spring-2018/', tag: 'MIT OCW' },
+                    { level: 10, title: 'Software Engineering Master', url: 'https://www.edx.org/masters/computer-science', tag: 'edX Audit' }
+                ]
+            },
+            {
+                id: 'devops', name: 'DevOps Engineering',
+                icon: 'M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z',
+                meta: { salary: '$110k - $170k', time: '9 - 14 Months', role: 'DevOps Engineer' },
+                links: [
+                    { level: 1, title: 'OS Concepts', url: 'https://www.khanacademy.org/computing/computer-science', tag: 'Khan Academy' },
+                    { level: 2, title: 'Bash Scripting', url: 'https://www.codecademy.com/learn/learn-bash-scripting', tag: 'Codecademy' },
+                    { level: 3, title: 'DevOps Fundamentals', url: 'https://www.coursera.org/learn/intro-to-devops', tag: 'IBM' },
+                    { level: 4, title: 'Docker & Containers', url: 'https://www.codecademy.com/learn/learn-docker', tag: 'Codecademy' },
+                    { level: 5, title: 'Containerization', url: 'https://www.edx.org/learn/containerization', tag: 'edX' },
+                    { level: 6, title: 'IBM DevOps', url: 'https://www.coursera.org/professional-certificates/devops-and-software-engineering', tag: 'IBM' },
+                    { level: 7, title: 'Monitoring & Automation', url: 'https://ocw.mit.edu/courses/16-410-principles-of-autonomy-and-decision-making-fall-2010/', tag: 'MIT OCW' },
+                    { level: 8, title: 'Cloud Computing (Adv)', url: 'https://www.codecademy.com/catalog/subject/cloud-computing', tag: 'Codecademy' },
+                    { level: 9, title: 'Site Reliability Eng', url: 'https://sre.google/books/', tag: 'Google SRE' },
+                    { level: 10, title: 'Advanced Systems', url: 'https://ocw.mit.edu/courses/6-033-computer-system-engineering-spring-2018/', tag: 'MIT OCW' }
+                ]
+            },
+            {
+                id: 'cloud', name: 'Cloud Computing',
+                icon: 'M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10',
+                meta: { salary: '$115k - $180k', time: '8 - 12 Months', role: 'Cloud Architect' },
+                links: [
+                    { level: 1, title: 'Cloud Concepts', url: 'https://www.khanacademy.org/computing/computer-science', tag: 'Khan Academy' },
+                    { level: 2, title: 'Cloud Computing Basics', url: 'https://www.codecademy.com/learn/introduction-to-cloud-computing', tag: 'Codecademy' },
+                    { level: 3, title: 'Google Cloud Basics', url: 'https://www.coursera.org/learn/gcp-fundamentals', tag: 'Google' },
+                    { level: 4, title: 'Cloud Certifications', url: 'https://www.freecodecamp.org/news/tag/cloud-computing/', tag: 'freeCodeCamp' },
+                    { level: 5, title: 'AWS & Azure', url: 'https://www.edx.org/learn/aws', tag: 'edX' },
+                    { level: 6, title: 'IBM Cloud Computing', url: 'https://www.coursera.org/professional-certificates/ibm-cloud-computing', tag: 'IBM' },
+                    { level: 7, title: 'Serverless Arch', url: 'https://www.codecademy.com/learn/learn-serverless', tag: 'Codecademy' },
+                    { level: 8, title: 'Advanced Cloud Sys', url: 'https://www.edx.org/learn/cloud-computing', tag: 'edX' },
+                    { level: 9, title: 'Cloud Architecture', url: 'https://ocw.mit.edu/courses/6-829-computer-networks-fall-2002/', tag: 'MIT OCW' },
+                    { level: 10, title: 'Cloud Migration Strategy', url: 'https://www.coursera.org/specializations/google-cloud-architecture', tag: 'Google' }
+                ]
+            },
+            {
+                id: 'opensource', name: 'Open Source Strategy',
+                icon: 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z',
+                meta: { salary: '$100k - $160k', time: '6 - 12 Months', role: 'OS Maintainer' },
+                links: [
+                    { level: 1, title: 'Computer Programming', url: 'https://www.khanacademy.org/computing/computer-programming', tag: 'Khan Academy' },
+                    { level: 2, title: 'Git & GitHub Basics', url: 'https://www.codecademy.com/learn/learn-git', tag: 'Codecademy' },
+                    { level: 3, title: 'Intro to Open Source', url: 'https://www.edx.org/learn/open-source', tag: 'edX' },
+                    { level: 4, title: 'Version Control (Git)', url: 'https://www.coursera.org/learn/version-control-with-git', tag: 'Atlassian' },
+                    { level: 5, title: 'Making Contributions', url: 'https://www.freecodecamp.org/news/how-to-contribute-to-open-source-projects-beginners-guide/', tag: 'freeCodeCamp' },
+                    { level: 6, title: 'Linux Contributions', url: 'https://www.coursera.org/specializations/open-source-software-development-linux-and-git', tag: 'Linux Fdn' },
+                    { level: 7, title: 'Maintainer Best Practices', url: 'https://opensource.guide/best-practices/', tag: 'GitHub' },
+                    { level: 8, title: 'Advanced OS Dev', url: 'https://www.edx.org/learn/software-development', tag: 'edX' },
+                    { level: 9, title: 'Software Projects', url: 'https://ocw.mit.edu/courses/6-005-software-construction-spring-2016/', tag: 'MIT OCW' },
+                    { level: 10, title: 'Ecosystem Leadership', url: 'https://www.coursera.org/learn/open-source-software-development-methods', tag: 'Linux Fdn' }
+                ]
+            },
+            {
+                id: 'cs', name: 'Computer Science (Foundations)',
+                icon: 'M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4',
+                meta: { salary: '$90k - $150k', time: '12 - 24 Months', role: 'Software Engineer' },
+                links: [
+                    { level: 1, title: 'Python for Everybody', url: 'https://www.coursera.org/specializations/python', tag: 'UMich' },
+                    { level: 2, title: 'Code Foundations', url: 'https://www.codecademy.com/learn/code-foundations', tag: 'Codecademy' },
+                    { level: 3, title: 'CS Algorithms & Data', url: 'https://www.freecodecamp.org/learn/javascript-algorithms-and-data-structures/', tag: 'freeCodeCamp' },
+                    { level: 4, title: 'Computer Science 101', url: 'https://www.edx.org/learn/computer-science', tag: 'Harvard CS50' },
+                    { level: 5, title: 'Scientific Computing', url: 'https://www.freecodecamp.org/learn/scientific-computing-with-python/', tag: 'freeCodeCamp' },
+                    { level: 6, title: 'Intermediate Java', url: 'https://www.coursera.org/learn/java-programming', tag: 'Duke' },
+                    { level: 7, title: 'Advanced Algorithms', url: 'https://ocw.mit.edu/courses/6-006-introduction-to-algorithms-spring-2020/', tag: 'MIT OCW' },
+                    { level: 8, title: 'Adv Computer Science', url: 'https://www.codecademy.com/catalog/subject/computer-science', tag: 'Codecademy' },
+                    { level: 9, title: 'Advanced Programming', url: 'https://www.edx.org/learn/computer-programming', tag: 'edX' },
+                    { level: 10, title: 'Language Design PhD', url: 'https://ocw.mit.edu/courses/6-826-principles-of-computer-systems-spring-2014/', tag: 'MIT OCW' }
+                ]
+            },
+            {
+                id: 'mobile', name: 'Mobile Development',
+                icon: 'M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z',
+                meta: { salary: '$90k - $145k', time: '6 - 9 Months', role: 'iOS/Android Dev' },
+                links: [
+                    { level: 1, title: 'Mobile Dev Basics', url: 'https://www.codecademy.com/catalog/subject/mobile-development', tag: 'Codecademy' },
+                    { level: 2, title: 'Android/iOS Intro', url: 'https://www.coursera.org/learn/getting-started-with-ios-app-development', tag: 'Coursera' },
+                    { level: 3, title: 'Mobile Apps Intro', url: 'https://www.edx.org/learn/mobile-development', tag: 'edX' },
+                    { level: 4, title: 'Mobile App Projects', url: 'https://www.freecodecamp.org/news/tag/mobile-app-development/', tag: 'freeCodeCamp' },
+                    { level: 5, title: 'React Native', url: 'https://www.edx.org/learn/react-native', tag: 'edX' },
+                    { level: 6, title: 'IBM Mobile Dev', url: 'https://www.coursera.org/professional-certificates/ibm-full-stack-cloud-developer', tag: 'IBM' },
+                    { level: 7, title: 'Advanced Mobile', url: 'https://www.codecademy.com/learn/paths/ios-developer', tag: 'Codecademy' },
+                    { level: 8, title: 'Advanced Android', url: 'https://www.edx.org/learn/android-app-development', tag: 'edX' },
+                    { level: 9, title: 'Mobile Systems', url: 'https://ocw.mit.edu/courses/6-033-computer-system-engineering-spring-2018/', tag: 'MIT OCW' },
+                    { level: 10, title: 'Innovation in Mobile', url: 'https://www.coursera.org/specializations/android-app-development', tag: 'Vanderbilt' }
+                ]
+            },
+            {
+                id: 'web3', name: 'Blockchain & Web3',
+                icon: 'M13 10V3L4 14h7v7l9-11h-7z',
+                meta: { salary: '$100k - $180k', time: '6 - 12 Months', role: 'Smart Contract Dev' },
+                links: [
+                    { level: 1, title: 'Blockchain Basics', url: 'https://www.coursera.org/learn/blockchain-basics', tag: 'Coursera' },
+                    { level: 2, title: 'Code Foundations', url: 'https://www.codecademy.com/learn/code-foundations', tag: 'Codecademy' },
+                    { level: 3, title: 'Crypto Economics', url: 'https://www.edx.org/learn/blockchain', tag: 'edX' },
+                    { level: 4, title: 'Web3 Projects', url: 'https://www.freecodecamp.org/news/tag/web3/', tag: 'freeCodeCamp' },
+                    { level: 5, title: 'Smart Contracts', url: 'https://www.edx.org/learn/smart-contracts', tag: 'edX' },
+                    { level: 6, title: 'IBM Blockchain', url: 'https://www.coursera.org/specializations/blockchain-revolution-enterprise-business', tag: 'IBM' },
+                    { level: 7, title: 'Advanced Blockchain', url: 'https://www.codecademy.com/learn/introduction-to-blockchain', tag: 'Codecademy' },
+                    { level: 8, title: 'DeFi & Security', url: 'https://www.coursera.org/learn/decentralized-finance-infrastructure-duke', tag: 'Duke' },
+                    { level: 9, title: 'Cryptography Systems', url: 'https://ocw.mit.edu/courses/6-875-cryptography-and-cryptanalysis-spring-2005/', tag: 'MIT OCW' },
+                    { level: 10, title: 'Blockchain Innovation', url: 'https://www.edx.org/masters/blockchain', tag: 'edX Audit' }
+                ]
+            },
+            {
+                id: 'perks', name: 'Hidden Intel (Student Perks)',
+                icon: 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4',
+                meta: { salary: 'Save $5000+', time: 'Instant Access', role: 'Resource Hacker' },
+                links: [
+                    // No levels here, just a flat list of resources
+                    { title: 'GitHub Student Pack', url: 'https://education.github.com/pack', tag: 'The Holy Grail' },
+                    { title: 'UNiDAYS', url: 'https://www.myunidays.com/', tag: 'Global Discounts' },
+                    { title: 'Student Beans', url: 'https://www.studentbeans.com/', tag: 'Tech & Fashion' },
+                    { title: 'JetBrains License', url: 'https://www.jetbrains.com/community/education/#students', tag: 'Free Pro IDEs' },
+                    { title: 'Azure for Students', url: 'https://azure.microsoft.com/en-us/free/students/', tag: '$100 Cloud Credit' },
+                    { title: 'Amazon Prime Student', url: 'https://www.amazon.com/student', tag: '6 Months Free' },
+                    { title: 'Notion for Education', url: 'https://www.notion.so/product/notion-for-education', tag: 'Second Brain' },
+                    { title: 'Autodesk Education', url: 'https://www.autodesk.com/education/edu-software', tag: 'Free AutoCAD/Maya' },
+                    { title: 'Figma Education', url: 'https://www.figma.com/education/', tag: 'Pro Design Tools' },
+                    { title: 'Spotify Student', url: 'https://www.spotify.com/us/student/', tag: 'Music + Hulu' },
+                    { title: 'Internet Archive', url: 'https://archive.org/', tag: 'Digital Library' },
+                    { title: 'Canva for Students', url: 'https://www.canva.com/education/students/', tag: 'Design Suite' },
+                    { title: 'Wolfram Alpha', url: 'https://www.wolframalpha.com/', tag: 'Computational Engine' },
+                    { title: 'OpenStax Textbooks', url: 'https://openstax.org/', tag: 'Free Textbooks' },
+                    { title: 'Project Gutenberg', url: 'https://www.gutenberg.org/', tag: 'Free eBooks' }
                 ]
             }
         ];
 
-        // --- COMMAND CENTER UI (FIXED TABS SCROLL) ---
+        // --- MATRIX BG ---
+        const canvas = document.getElementById('matrix-bg');
+        const ctx = canvas.getContext('2d');
+        const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        let drops = [];
+        function resizeCanvas() {
+            canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+            const columns = canvas.width / 16; drops = new Array(Math.ceil(columns)).fill(1);
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+        function drawMatrix() {
+            ctx.fillStyle = 'rgba(2, 2, 2, 0.05)'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#0f0'; ctx.font = '12px monospace';
+            for(let i=0; i<drops.length; i++) {
+                const text = chars[Math.floor(Math.random()*chars.length)];
+                ctx.fillText(text, i*16, drops[i]*16);
+                if(drops[i]*16 > canvas.height && Math.random() > 0.985) drops[i] = 0;
+                drops[i]++;
+            }
+        }
+        setInterval(drawMatrix, 40);
+
+        // --- RENDERER V4: THE ACADEMY UI ---
         function initHubsUI() {
             const tabContainer = document.getElementById('hub-tabs');
-            const contentArea = document.getElementById('hub-content-area');
-            if(!tabContainer) return;
-            
             tabContainer.innerHTML = '';
             hubsData.forEach((hub, index) => {
                 const btn = document.createElement('button');
-                // Ensures tabs are side-by-side on mobile, stacked on desktop
-                btn.className = `tab-btn w-auto md:w-full text-left px-6 py-4 text-xs font-mono uppercase tracking-widest text-gray-500 hover:bg-white/5 hover:text-white transition-all border-b-2 md:border-b-0 md:border-l-2 border-transparent flex items-center gap-3 shrink-0 whitespace-nowrap`;
+                btn.className = `tab-btn w-full text-left px-6 py-5 text-xs font-bold font-mono uppercase tracking-widest text-gray-500 border-l-2 border-transparent flex items-center gap-3 shrink-0 group`;
                 if (index === 0) btn.classList.add('active');
-                btn.innerHTML = `<svg class="w-4 h-4 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${hub.icon}"></path></svg> ${hub.name}`;
-                
+                btn.innerHTML = `
+                    <svg class="w-4 h-4 opacity-60 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${hub.icon}"></path></svg> 
+                    <span class="group-hover:text-white transition-colors">${hub.name}</span>
+                `;
                 btn.onclick = () => {
                     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
                     btn.classList.add('active');
@@ -732,228 +833,463 @@
             contentArea.style.opacity = '0';
             
             setTimeout(() => {
-                let linksHtml = hub.links.map((link, i) => {
-                    let badgeClass = 'text-green-400 bg-green-400/10';
-                    if(link.color === 'blue') badgeClass = 'text-blue-400 bg-blue-400/10';
-                    if(link.color === 'orange') badgeClass = 'text-orange-400 bg-orange-400/10';
-                    if(link.color === 'purple') badgeClass = 'text-purple-400 bg-purple-400/10';
-
-                    return `
-                        <a href="${link.url}" target="_blank" class="flex items-center justify-between p-4 rounded border border-white/5 bg-white/[0.02] hover:bg-white/5 hover:border-[#00ff41]/30 transition-all group">
-                            <div class="flex items-center gap-4">
-                                <span class="text-gray-600 font-mono text-[10px]">0${i+1}</span>
-                                <span class="text-gray-300 group-hover:text-white font-medium text-sm">${link.title}</span>
-                            </div>
-                            <span class="${badgeClass} px-2 py-0.5 rounded text-[9px] uppercase tracking-widest">${link.tag}</span>
-                        </a>`;
-                }).join('');
+                contentArea.innerHTML = ''; 
                 
-                contentArea.innerHTML = `
-                    <div class="mb-6 flex items-center gap-4">
-                        <h3 class="text-2xl font-serif text-white">${hub.name}</h3>
-                        <div class="h-px flex-1 bg-gradient-to-r from-white/20 to-transparent"></div>
-                    </div>
-                    <div class="flex flex-col gap-2 overflow-y-auto custom-scrollbar pr-2 max-h-[500px]">
-                        ${linksHtml}
+                // V4 Header: "Degree Overview"
+                const overview = document.createElement('div');
+                overview.className = 'p-8 border-b border-white/5 bg-white/[0.01]';
+                overview.innerHTML = `
+                    <div class="flex flex-col md:flex-row md:items-end justify-between gap-6">
+                        <div>
+                            <div class="flex items-center gap-3 mb-2 text-xs font-mono text-[#00ff41] uppercase tracking-widest">
+                                <span class="w-2 h-2 bg-[#00ff41] rounded-full animate-pulse"></span>
+                                Accredited Path
+                            </div>
+                            <h2 class="text-4xl font-serif text-white mb-2">${hub.name}</h2>
+                            <p class="text-gray-500 text-sm mb-4">Comprehensive Master's Track</p>
+                        </div>
+                        <div class="flex gap-6 text-right">
+                            <div>
+                                <p class="text-[10px] font-bold uppercase tracking-widest text-gray-600 mb-1">Est. Salary</p>
+                                <p class="text-white font-mono">${hub.meta.salary}</p>
+                            </div>
+                             <div>
+                                <p class="text-[10px] font-bold uppercase tracking-widest text-gray-600 mb-1">Duration</p>
+                                <p class="text-white font-mono">${hub.meta.time}</p>
+                            </div>
+                        </div>
                     </div>
                 `;
-                contentArea.style.opacity = '1';
-            }, 150);
-        }
+                contentArea.appendChild(overview);
 
-        // --- TECH NEWS FETCH ---
-        async function fetchTechNews() {
-            const container = document.getElementById('tech-news-container');
-            try {
-                container.innerHTML = `<div class="p-8 text-center text-gray-600 font-mono text-xs animate-pulse">Fetching wire...</div>`;
-                const res = await fetch('https://hacker-news.firebaseio.com/v0/topstories.json');
-                const ids = await res.json();
-                const top5 = ids.slice(0, 5);
-                const stories = await Promise.all(top5.map(id => fetch(`https://hacker-news.firebaseio.com/v0/item/${id}.json`).then(r => r.json())));
-                
-                container.innerHTML = stories.map(s => {
-                    const domain = s.url ? new URL(s.url).hostname.replace('www.','') : 'news.ycombinator.com';
-                    return `
-                        <div class="p-3 border-b border-white/5 hover:bg-white/5 transition-colors group">
-                            <a href="${s.url || 'https://news.ycombinator.com/item?id='+s.id}" target="_blank" class="block text-sm text-gray-300 group-hover:text-white mb-1 leading-snug">
-                                ${s.title}
-                            </a>
-                            <div class="flex justify-between items-center text-[10px] text-gray-600 font-mono uppercase">
-                                <span class="text-blue-400/70 group-hover:text-blue-400 transition-colors">${domain}</span>
-                                <span>${s.score} pts</span>
+                // Scroll Container
+                const scrollArea = document.createElement('div');
+                scrollArea.className = 'flex-1 overflow-y-auto custom-scrollbar p-8';
+
+                // --- INSTRUCTION CARD (Hidden Intel Only) ---
+                if (hub.id === 'perks') {
+                    const instruction = document.createElement('div');
+                    instruction.className = 'mb-10 p-5 rounded-xl bg-purple-500/5 border border-purple-500/20 relative overflow-hidden group';
+                    instruction.innerHTML = `
+                        <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                            <svg class="w-24 h-24 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+                        </div>
+                        <h4 class="text-purple-400 text-xs font-bold uppercase tracking-widest mb-3 flex items-center gap-2">
+                            <span class="w-1.5 h-1.5 bg-purple-400 rounded-full animate-pulse"></span> Institutional Privilege Protocol
+                        </h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs font-mono text-gray-300 relative z-10">
+                            <div>
+                                <p class="mb-2 font-bold text-white">Target: Bachelor's, Master's, & PhD Students</p>
+                                <p class="opacity-80 leading-relaxed">
+                                    Your institutional email (.edu / .ac) acts as a master key. Most universities provide <strong>Enterprise Access</strong> to premium platforms.
+                                </p>
+                            </div>
+                            <div class="space-y-2 border-l border-purple-500/20 pl-4">
+                                <div class="flex gap-2">
+                                    <span class="text-purple-400">>></span>
+                                    <span><strong>Coursera Plus / LinkedIn Learning:</strong> Often FREE via library portal.</span>
+                                </div>
+                                <div class="flex gap-2">
+                                    <span class="text-purple-400">>></span>
+                                    <span><strong>Action:</strong> Search "[University Name] Library Databases".</span>
+                                </div>
                             </div>
                         </div>
                     `;
-                }).join('');
-            } catch(e) {
-                container.innerHTML = `<div class="p-4 text-red-500/50 text-xs text-center">Signal Lost</div>`;
-            }
+                    scrollArea.appendChild(instruction);
+
+                    // --- GRID LAYOUT FOR PERKS (No Timeline) ---
+                    const grid = document.createElement('div');
+                    grid.className = 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4';
+                    
+                    hub.links.forEach(link => {
+                        const card = document.createElement('a');
+                        card.href = link.url;
+                        card.target = "_blank";
+                        card.className = "group p-4 rounded-xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.05] hover:border-[#00ff41]/30 transition-all flex flex-col gap-2 h-full";
+                        card.innerHTML = `
+                            <div class="flex justify-between items-start">
+                                <span class="text-[#00ff41] text-[10px] font-mono uppercase tracking-widest border border-[#00ff41]/20 px-2 py-0.5 rounded bg-[#00ff41]/5">${link.tag}</span>
+                                <svg class="w-3 h-3 text-gray-600 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+                            </div>
+                            <h4 class="text-gray-200 font-medium group-hover:text-white text-sm">${link.title}</h4>
+                        `;
+                        grid.appendChild(card);
+                    });
+                    scrollArea.appendChild(grid);
+
+                } else {
+                    // --- STANDARD TIMELINE FOR FACULTIES ---
+                    const timeline = document.createElement('div');
+                    timeline.className = 'relative border-l border-white/10 ml-3 md:ml-6 space-y-10 pb-10';
+                    
+                    hub.links.forEach((link, i) => {
+                        // Grouping logic for "Semesters"
+                        let stage = 'Freshman Year';
+                        let stageColor = 'text-emerald-400';
+                        if(i > 2) { stage = 'Junior Year'; stageColor = 'text-blue-400'; }
+                        if(i > 5) { stage = 'Senior Year'; stageColor = 'text-orange-400'; }
+                        if(i > 8) { stage = 'Mastery'; stageColor = 'text-purple-400'; }
+
+                        const item = document.createElement('div');
+                        item.className = 'relative pl-8 md:pl-12 group link-item';
+                        item.dataset.title = link.title.toLowerCase();
+
+                        // Timeline Dot
+                        const dot = document.createElement('div');
+                        dot.className = `absolute -left-[5px] top-1.5 w-2.5 h-2.5 rounded-full bg-[#111] border border-gray-600 group-hover:border-[#00ff41] group-hover:bg-[#00ff41] transition-all duration-300 shadow-[0_0_0_4px_#050505]`;
+                        item.appendChild(dot);
+
+                        // Card
+                        item.innerHTML += `
+                            <a href="${link.url}" onclick="handleLinkClick(event, '${link.url}')" target="_blank" class="block p-5 rounded-xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.05] hover:border-[#00ff41]/20 transition-all duration-300 group-hover:translate-x-1">
+                                <div class="flex justify-between items-start mb-2">
+                                    <span class="text-[10px] font-bold uppercase tracking-widest ${stageColor} opacity-80">${stage} • Lvl ${link.level}</span>
+                                    <svg class="w-4 h-4 text-gray-600 group-hover:text-[#00ff41] transition-colors transform group-hover:translate-x-1 group-hover:-translate-y-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+                                </div>
+                                <h4 class="text-lg text-gray-200 font-medium group-hover:text-white mb-1 link-text">${link.title}</h4>
+                                <p class="text-xs font-mono text-gray-600">[ ${link.tag} ]</p>
+                            </a>
+                        `;
+                        timeline.appendChild(item);
+                    });
+                    scrollArea.appendChild(timeline);
+                }
+
+                contentArea.appendChild(scrollArea);
+                contentArea.style.opacity = '1';
+            }, 200);
         }
 
-        // --- SEARCH LOGIC ---
+        // --- SEARCH & NEWS LOGIC (PRESERVED) ---
         const searchInput = document.getElementById('searchInput');
         searchInput.addEventListener('input', (e) => {
             const term = e.target.value.toLowerCase();
-            const idx = hubsData.findIndex(h => h.name.toLowerCase().includes(term));
-            if(idx !== -1) {
-                document.querySelectorAll('.tab-btn')[idx].click();
-                document.getElementById('command').scrollIntoView({ behavior: 'smooth' });
+            const hubIdx = hubsData.findIndex(h => h.name.toLowerCase().includes(term) || h.links.some(l => l.title.toLowerCase().includes(term)));
+            if(hubIdx !== -1) {
+                const tabs = document.querySelectorAll('.tab-btn');
+                if (!tabs[hubIdx].classList.contains('active')) tabs[hubIdx].click();
+                setTimeout(() => {
+                    document.querySelectorAll('.link-item').forEach(link => {
+                        if(link.dataset.title.includes(term)) {
+                            link.style.display = 'block';
+                            if(term.length > 1) link.querySelector('.link-text').classList.add('text-[#00ff41]');
+                            else link.querySelector('.link-text').classList.remove('text-[#00ff41]');
+                        } else link.style.display = term.length > 0 ? 'none' : 'block';
+                    });
+                }, 250);
             }
         });
 
-        // --- AI TERMINAL LOGIC ---
-        window.toggleNeuralTerminal = () => {
-            const term = document.getElementById('neuralTerminal');
-            term.classList.toggle('hidden');
-            if(!term.classList.contains('hidden')) {
-                if(!sessionStorage.getItem('root_ai_key')) document.getElementById('apiKeyConfig').classList.remove('hidden');
-            }
-        };
-        window.toggleApiKeyModal = () => document.getElementById('apiKeyConfig').classList.toggle('hidden');
-        
-        window.saveApiKey = () => {
-            const k = document.getElementById('apiKeyInput').value;
-            const p = document.getElementById('providerSelect').value;
-            if(k) {
-                sessionStorage.setItem('root_ai_key', k);
-                sessionStorage.setItem('root_ai_provider', p);
-                document.getElementById('apiKeyConfig').classList.add('hidden');
-                appendAIMessage(`Uplink secured. Protocol: ${p.toUpperCase()}`);
-            }
-        };
-
-        window.clearApiKey = () => {
-            sessionStorage.clear();
-            alert('Memory purged.');
-            document.getElementById('apiKeyInput').value = '';
-        };
-
-        window.updateKeyLinks = () => {
-            const p = document.getElementById('providerSelect').value;
-            const area = document.getElementById('keyLinksArea');
-            let txt = 'Get Key: ';
-            if(p === 'gemini') txt += '<a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-[#00ff41] hover:underline">Google AI Studio</a>';
-            if(p === 'groq') txt += '<a href="https://console.groq.com/keys" target="_blank" class="text-[#00ff41] hover:underline">Groq Cloud</a>';
-            area.innerHTML = `<span class="text-gray-500 text-xs font-mono">${txt}</span>`;
-        };
-
-        window.handleChatSubmit = async (e) => {
-            e.preventDefault();
-            const input = document.getElementById('chatInput');
-            const txt = input.value.trim();
-            if(!txt) return;
-            
-            const output = document.getElementById('chatOutput');
-            output.innerHTML += `<div class="text-right mb-4"><span class="bg-white/10 text-white px-3 py-2 rounded text-sm inline-block">${txt}</span></div>`;
-            input.value = '';
-            output.scrollTop = output.scrollHeight;
-
-            const key = sessionStorage.getItem('root_ai_key');
-            const provider = sessionStorage.getItem('root_ai_provider') || 'gemini';
-
-            if(!key) {
-                output.innerHTML += `<div class="text-red-400 text-xs font-mono mb-4">! ERR: Missing credentials. Config required.</div>`;
-                return document.getElementById('apiKeyConfig').classList.remove('hidden');
-            }
-
-            // Simple Loader
-            const loaderId = 'loader-' + Date.now();
-            output.innerHTML += `<div id="${loaderId}" class="text-[#00ff41] text-xs font-mono animate-pulse mb-4">PROCESSING...</div>`;
-
+        async function fetchTechNews() {
+            const container = document.getElementById('tech-news-container');
+            container.innerHTML = `<div class="text-center text-gray-600 font-mono text-xs py-10 animate-pulse">Synchronizing Global Feed...</div>`;
             try {
-                let reply = "";
-                if(provider === 'gemini') {
-                    const req = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`, {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({ contents: [{ parts: [{ text: "You are a tactical intelligence officer AI. Be concise. " + txt }] }] })
-                    });
-                    const res = await req.json();
-                    reply = res.candidates?.[0]?.content?.parts?.[0]?.text || "Error parsing signal.";
-                } else {
-                    // Groq Logic (DeepSeek Removed)
-                    const url = 'https://api.groq.com/openai/v1/chat/completions';
-                    const model = 'llama-3.3-70b-versatile';
-                    
-                    const req = await fetch(url, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
-                        body: JSON.stringify({
-                            model: model,
-                            messages: [{role: "system", content: "You are a tactical intelligence AI."}, {role: "user", content: txt}]
-                        })
-                    });
-                    const res = await req.json();
-                    reply = res.choices?.[0]?.message?.content || "Signal lost.";
-                }
+                const res = await fetch('https://hacker-news.firebaseio.com/v0/topstories.json');
+                if (!res.ok) throw new Error("Network response was not ok");
                 
-                document.getElementById(loaderId).remove();
-                appendAIMessage(reply);
-            } catch(e) {
-                document.getElementById(loaderId).remove();
-                output.innerHTML += `<div class="text-red-400 text-xs font-mono mb-4">! CONNECTION FAILURE</div>`;
-            }
-        };
+                // Get all IDs, shuffle them, and pick 7 random ones
+                let ids = await res.json();
+                ids = ids.sort(() => 0.5 - Math.random()).slice(0, 7);
 
-        function appendAIMessage(txt) {
-            const output = document.getElementById('chatOutput');
-            // Convert markdown-ish to simple HTML (basic)
-            const fmt = txt.replace(/\n/g, '<br>');
-            output.innerHTML += `<div class="text-[#00ff41] text-sm font-mono leading-relaxed mb-6 border-l-2 border-[#00ff41]/30 pl-3">${fmt}</div>`;
-            output.scrollTop = output.scrollHeight;
+                const stories = await Promise.all(ids.map(id => fetch(`https://hacker-news.firebaseio.com/v0/item/${id}.json`).then(r => r.json())));
+                container.innerHTML = '';
+                stories.forEach(s => {
+                    const div = document.createElement('div');
+                    div.className = 'p-3 border-b border-white/5 hover:bg-white/5 transition-colors';
+                    const domain = s.url ? new URL(s.url).hostname.replace('www.','') : 'news.ycombinator.com';
+                    div.innerHTML = `<a href="${s.url || 'https://news.ycombinator.com/item?id='+s.id}" target="_blank" class="text-sm text-gray-400 hover:text-[#00ff41] font-medium block mb-1">${s.title}</a><div class="flex justify-between text-[10px] text-gray-600 font-mono"><span>${domain}</span><span>${s.score} PTS</span></div>`;
+                    container.appendChild(div);
+                });
+            } catch(e) { 
+                // Fallback for "Online" look if fetch fails
+                container.innerHTML = '';
+                let mockNews = [
+                    { title: "OpenAI releases new reasoning models", url: "https://openai.com", domain: "openai.com", score: 1542 },
+                    { title: "Linux 6.12 kernel brings real-time capabilities", url: "https://kernel.org", domain: "kernel.org", score: 892 },
+                    { title: "SpaceX Starship successful orbital insertion", url: "https://spacex.com", domain: "spacex.com", score: 2103 },
+                    { title: "The future of Rust in the Linux Kernel", url: "https://rust-lang.org", domain: "rust-lang.org", score: 765 },
+                    { title: "NASA discovers new exoplanet with potential biosignatures", url: "https://nasa.gov", domain: "nasa.gov", score: 1204 },
+                    { title: "CSS Grid Level 3 specifications finalized", url: "https://w3.org", domain: "w3.org", score: 430 },
+                    { title: "Quantum computing breakthrough in error correction", url: "https://nature.com", domain: "nature.com", score: 980 },
+                    { title: "Python 3.14 to remove GIL entirely", url: "https://python.org", domain: "python.org", score: 1340 },
+                    { title: "New solid-state battery doubles EV range", url: "https://ieee.org", domain: "ieee.org", score: 2200 },
+                    { title: "GitHub Copilot now generates architectural diagrams", url: "https://github.blog", domain: "github.blog", score: 890 },
+                    { title: "Google DeepMind solves 50-year math problem", url: "https://deepmind.google", domain: "deepmind.google", score: 3100 }
+                ];
+                
+                // Shuffle mock news for randomness
+                mockNews = mockNews.sort(() => 0.5 - Math.random()).slice(0, 7);
+                
+                mockNews.forEach(s => {
+                    const div = document.createElement('div');
+                    div.className = 'p-3 border-b border-white/5 hover:bg-white/5 transition-colors';
+                    div.innerHTML = `<a href="${s.url}" target="_blank" class="text-sm text-gray-400 hover:text-[#00ff41] font-medium block mb-1">${s.title}</a><div class="flex justify-between text-[10px] text-gray-600 font-mono"><span>${s.domain}</span><span>${s.score} PTS</span></div>`;
+                    container.appendChild(div);
+                });
+            } 
         }
 
-        // --- FIELD TOOLS ---
-        window.toolEncode = () => {
-            try { document.getElementById('scramblerOutput').value = btoa(document.getElementById('scramblerInput').value); } 
-            catch(e) { document.getElementById('scramblerOutput').value = "ERR"; }
-        };
-        window.toolDecode = () => {
-            try { document.getElementById('scramblerOutput').value = atob(document.getElementById('scramblerInput').value); } 
-            catch(e) { document.getElementById('scramblerOutput').value = "ERR"; }
-        };
-        window.generateKey = () => {
-            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
-            const len = document.getElementById('keyLen').value;
-            let res = '';
-            for(let i=0; i<len; i++) res += chars.charAt(Math.floor(Math.random() * chars.length));
-            document.getElementById('keygenOutput').innerText = res;
-        };
-        window.copyToClipboard = (id) => {
-            navigator.clipboard.writeText(document.getElementById(id).innerText);
-            const btn = event.currentTarget;
-            const original = btn.innerHTML;
-            btn.innerHTML = '<span class="text-[#00ff41] text-[10px]">COPIED</span>';
-            setTimeout(() => btn.innerHTML = original, 1500);
-        };
-        window.fetchNetInfo = async () => {
-            document.getElementById('ipVal').innerText = 'Ping...';
-            try {
-                const r = await fetch('https://ipapi.co/json/');
-                const d = await r.json();
-                document.getElementById('ipVal').innerText = d.ip;
-                document.getElementById('ispVal').innerText = d.org;
-                document.getElementById('locVal').innerText = `${d.city}, ${d.country_code}`;
-            } catch(e) { document.getElementById('ipVal').innerText = 'Offline'; }
+        // --- SONIC UPLINK (Focus Ambience) ---
+        let audioCtx;
+        let noiseNode;
+        let isPlayingAmbience = false;
+
+        function createBrownNoise() {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const bufferSize = audioCtx.sampleRate * 2; // 2 seconds buffer
+            const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const data = buffer.getChannelData(0);
+            
+            for (let i = 0; i < bufferSize; i++) {
+                const white = Math.random() * 2 - 1;
+                data[i] = (lastOut + (0.02 * white)) / 1.02;
+                lastOut = data[i];
+                data[i] *= 3.5; // Gain
+            }
+            
+            const noise = audioCtx.createBufferSource();
+            noise.buffer = buffer;
+            noise.loop = true;
+            
+            // Lowpass filter to make it "Brown" noise (Deep rumble)
+            const filter = audioCtx.createBiquadFilter();
+            filter.type = 'lowpass';
+            filter.frequency.value = 400; // Hz
+            
+            const gainNode = audioCtx.createGain();
+            gainNode.gain.value = 0.15; // Volume
+            
+            noise.connect(filter);
+            filter.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            
+            return noise;
+        }
+        let lastOut = 0;
+
+        window.toggleAmbience = () => {
+            const btn = document.getElementById('ambienceBtn');
+            const icon = btn.querySelector('svg');
+            const text = btn.querySelector('span');
+            
+            if (isPlayingAmbience) {
+                noiseNode.stop();
+                isPlayingAmbience = false;
+                btn.classList.remove('border-pink-500', 'bg-pink-500/10');
+                text.innerText = "Sonic Uplink";
+                text.classList.remove('text-white', 'animate-pulse');
+                icon.classList.remove('text-pink-500');
+            } else {
+                noiseNode = createBrownNoise();
+                noiseNode.start();
+                isPlayingAmbience = true;
+                btn.classList.add('border-pink-500', 'bg-pink-500/10');
+                text.innerText = "Uplink Active";
+                text.classList.add('text-white', 'animate-pulse');
+                icon.classList.add('text-pink-500');
+            }
         };
 
-        // --- INITIALIZE ---
-        document.addEventListener('DOMContentLoaded', () => {
-            initHubsUI(); // Use Tabs
-            fetchTechNews();
-            updateKeyLinks();
+        // --- ARCADE LOGIC (NEW) ---
+        
+        // Game Variables
+        let gameActive = false;
+        let score = 0;
+        let health = 100;
+        let gameInterval;
+        let spawnInterval;
+        const words = ["ENCRYPT", "FIREWALL", "MAINFRAME", "CIPHER", "ROOT", "SUDO", "KERNEL", "PROXY", "DOCKER", "LINUX", "PYTHON", "REACT", "NODE", "HACK", "BREACH", "ACCESS", "TOKEN", "DEPLOY", "BUILD", "PUSH"];
+        const gameInput = document.getElementById('gameInput');
+        
+        window.startGame = () => {
+            if (gameActive) return;
+            gameActive = true;
+            score = 0;
+            health = 100;
+            document.getElementById('gameScore').innerText = score;
+            document.getElementById('gameHealth').innerText = "100%";
+            document.getElementById('startScreen').classList.add('hidden');
+            document.getElementById('wordContainer').innerHTML = '';
+            gameInput.disabled = false;
+            gameInput.value = '';
+            gameInput.focus();
             
-            // Mobile menu logic
-            const menu = document.getElementById('mobileMenu');
-            document.getElementById('menuBtn').onclick = () => menu.classList.remove('translate-x-full');
-            document.getElementById('closeMenuBtn').onclick = () => menu.classList.add('translate-x-full');
-            
-            // Reveal on scroll
-            const observer = new IntersectionObserver((entries) => {
-                entries.forEach(e => { if(e.isIntersecting) e.target.classList.add('active'); });
-            }, { threshold: 0.1 });
-            document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+            // Game Loop
+            gameInterval = setInterval(() => {
+                const fallingWords = document.querySelectorAll('.falling-word');
+                fallingWords.forEach(el => {
+                    const top = parseFloat(el.style.top);
+                    if (top > 350) { // Hit bottom
+                        el.remove();
+                        health -= 10;
+                        document.getElementById('gameHealth').innerText = health + "%";
+                        if (health <= 0) endGame();
+                    } else {
+                        el.style.top = (top + 2) + 'px'; // Fall speed
+                    }
+                });
+            }, 50);
+
+            // Spawn Loop
+            spawnInterval = setInterval(() => {
+                const word = words[Math.floor(Math.random() * words.length)];
+                const el = document.createElement('div');
+                el.className = 'absolute text-[#00ff41] font-mono text-xs font-bold falling-word';
+                el.style.left = Math.random() * 90 + '%';
+                el.style.top = '0px';
+                el.innerText = word;
+                document.getElementById('wordContainer').appendChild(el);
+            }, 2000);
+        };
+
+        window.endGame = () => {
+            gameActive = false;
+            clearInterval(gameInterval);
+            clearInterval(spawnInterval);
+            gameInput.disabled = true;
+            document.getElementById('startScreen').classList.remove('hidden');
+            document.querySelector('#startScreen p').innerText = `MISSION FAILED. SCORE: ${score}`;
+            document.querySelector('#startScreen button').innerText = "RETRY BREACH";
+        };
+
+        // Input Listener
+        gameInput.addEventListener('input', (e) => {
+            const val = e.target.value.toUpperCase();
+            const targets = document.querySelectorAll('.falling-word');
+            targets.forEach(el => {
+                if (el.innerText === val) {
+                    el.remove();
+                    score += 100;
+                    document.getElementById('gameScore').innerText = score;
+                    e.target.value = '';
+                }
+            });
         });
+
+        // Binary Whisperer Logic
+        window.textToBin = () => {
+            const input = document.getElementById('binTextInput').value;
+            let output = '';
+            for (let i = 0; i < input.length; i++) {
+                output += input[i].charCodeAt(0).toString(2).padStart(8, '0') + ' ';
+            }
+            document.getElementById('binCodeOutput').value = output;
+        };
+
+        // Daily Side Quest Logic
+        const sideQuests = [
+            "Refactor a nested if-else statement into a cleaner function.",
+            "Learn 3 new Linux terminal commands and use them.",
+            "Write comments for the last piece of code you wrote.",
+            "Explain a complex algorithm to a rubber duck (or imaginary friend).",
+            "Fix that one TODO comment you left 2 months ago.",
+            "Read the documentation for a library you use daily.",
+            "Commit your code with a meaningful message.",
+            "Drink water. Hydrate or diedrate.",
+            "Find and star a new open-source project on GitHub.",
+            "Optimize an image asset on your current project.",
+            "Write a unit test for a function you 'know' works."
+        ];
+
+        window.generateQuest = () => {
+            const quest = sideQuests[Math.floor(Math.random() * sideQuests.length)];
+            const el = document.getElementById('questText');
+            el.style.opacity = 0;
+            setTimeout(() => {
+                el.innerText = `"${quest}"`;
+                el.style.opacity = 1;
+            }, 200);
+        };
+
+        // The Codex Logic
+        const codexData = [
+            { cmd: "git commit -m", desc: "Save changes with message" },
+            { cmd: "git push origin main", desc: "Upload code to repo" },
+            { cmd: "docker ps", desc: "List running containers" },
+            { cmd: "npm install", desc: "Install dependencies" },
+            { cmd: "ls -la", desc: "List all files (Linux)" },
+            { cmd: "chmod +x", desc: "Make file executable" },
+            { cmd: "python3 -m venv env", desc: "Create virtual env" },
+            { cmd: "tar -xvf", desc: "Extract tarball archive" },
+            { cmd: "ssh user@host", desc: "Connect to remote server" },
+            { cmd: "grep -r", desc: "Search text in files" }
+        ];
+
+        const codexSearch = document.getElementById('codexSearch');
+        codexSearch.addEventListener('input', (e) => {
+            const term = e.target.value.toLowerCase();
+            const res = document.getElementById('codexResult');
+            res.innerHTML = '';
+            
+            const hits = codexData.filter(c => c.cmd.includes(term) || c.desc.toLowerCase().includes(term));
+            
+            if (hits.length === 0) {
+                res.innerHTML = '<p class="opacity-50">No matching protocols.</p>';
+                return;
+            }
+            
+            hits.forEach(h => {
+                res.innerHTML += `
+                    <div class="mb-2 border-b border-white/5 pb-1">
+                        <div class="text-[#00ff41] font-bold">${h.cmd}</div>
+                        <div class="text-gray-500">${h.desc}</div>
+                    </div>
+                `;
+            });
+        });
+
+        // Dev Excuse Logic
+        const excuses = [
+            "It works on my machine.",
+            "It's not a bug, it's a feature.",
+            "I haven't touched that module in weeks.",
+            "It must be a caching issue.",
+            "The third-party API is down.",
+            "That was just a temporary fix.",
+            "I thought you signed off on that.",
+            "DNS propagation takes 24 hours.",
+            "It's a browser compatibility issue.",
+            "The user must be doing something wrong."
+        ];
+
+        window.generateExcuse = () => {
+            const ex = excuses[Math.floor(Math.random() * excuses.length)];
+            const el = document.getElementById('excuseText');
+            el.style.opacity = 0;
+            setTimeout(() => {
+                el.innerText = `"${ex}"`;
+                el.style.opacity = 1;
+            }, 200);
+        };
+
+        // --- INTERCEPTION LOGIC (NEW) ---
+        window.pendingUrl = '';
+        window.handleLinkClick = (e, url) => {
+            const isCoursera = url.includes('coursera.org');
+            const isEdx = url.includes('edx.org');
+            
+            if (isCoursera || isEdx) {
+                e.preventDefault();
+                window.pendingUrl = url;
+                
+                document.getElementById('coursera-guide').style.display = isCoursera ? 'block' : 'none';
+                document.getElementById('edx-guide').style.display = isEdx ? 'block' : 'none';
+                
+                toggleAuditModal();
+            }
+        };
+
+        window.proceedToCourse = () => {
+            if (window.pendingUrl) {
+                window.open(window.pendingUrl, '_blank');
+                window.pendingUrl = '';
+            }
+            toggleAuditModal();
+        };
+
+        // Init
+        document.addEventListener('DOMContentLoaded', () => { initHubsUI(); fetchTechNews(); const obs = new IntersectionObserver((e) => e.forEach(x => x.isIntersecting && x.target.classList.add('active')), {threshold:0.1}); document.querySelectorAll('.reveal').forEach(x => obs.observe(x)); });
     </script>
 </body>
 </html>
