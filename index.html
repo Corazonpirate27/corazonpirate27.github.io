@@ -142,26 +142,30 @@
         <div class="glass-panel rounded-2xl overflow-hidden flex flex-col lg:flex-row min-h-[600px] md:min-h-[800px] border-white/10 shadow-2xl reveal">
             
             <!-- Sidebar -->
-            <!-- FIXED: Added 'relative' for overlay positioning -->
-            <div class="w-full lg:w-72 glass-sidebar flex flex-col shrink-0 border-b lg:border-b-0 lg:border-r border-white/10 relative">
-                <div class="p-4 md:p-6 border-b border-white/5 flex justify-between items-center">
+            <!-- FIXED: Replaced horizontal scroll with responsive dropdown/sidebar layout -->
+            <div class="w-full lg:w-72 glass-sidebar flex flex-col shrink-0 border-b lg:border-b-0 lg:border-r border-white/10 relative z-20">
+                
+                <!-- Mobile Toggle / Desktop Header -->
+                <button onclick="toggleFacultyDropdown()" class="w-full p-4 md:p-6 border-b border-white/5 flex justify-between items-center lg:cursor-default lg:pointer-events-none hover:bg-white/5 transition-colors text-left group">
                     <div>
                         <h3 class="text-xs font-mono uppercase tracking-widest text-gray-500 mb-1">Select Faculty</h3>
-                        <p class="text-white font-serif text-lg">Departments</p>
+                        <!-- Dynamic Label for Mobile -->
+                        <p id="activeFacultyLabel" class="text-white font-serif text-lg flex items-center gap-2">
+                            Loading... 
+                        </p>
                     </div>
-                    <!-- MOBILE SWIPE INDICATOR (Visual Cue) -->
-                    <div class="lg:hidden text-[#00ff41] animate-bounce-right flex items-center gap-1 text-[10px] font-mono uppercase">
-                        <span>Scroll</span> <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path></svg>
+                    <!-- Chevron for Mobile -->
+                    <div class="lg:hidden text-[#00ff41] transform transition-transform duration-300 group-hover:scale-110">
+                        <svg id="facultyChevron" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                     </div>
-                </div>
+                </button>
 
-                <!-- FIXED: Container has 'relative' so fade mask works -->
-                <div class="relative flex-1 overflow-hidden">
-                    <div class="flex lg:flex-col overflow-x-auto lg:overflow-y-auto custom-scrollbar py-2 md:py-4 space-x-2 lg:space-x-0 lg:space-y-1 px-2 lg:px-0 absolute inset-0" id="hub-tabs">
+                <!-- Faculty List Container -->
+                <!-- Hidden on mobile by default, absolute positioned overlay when open -->
+                <div id="hub-tabs-container" class="hidden lg:block lg:relative absolute top-full left-0 w-full bg-black/95 lg:bg-transparent backdrop-blur-xl lg:backdrop-blur-none border-b border-white/10 lg:border-none shadow-2xl lg:shadow-none max-h-[50vh] lg:max-h-none overflow-y-auto custom-scrollbar">
+                    <div class="flex flex-col" id="hub-tabs">
                         <!-- Injected via JS -->
                     </div>
-                    <!-- Right fade mask for mobile indication -->
-                    <div class="absolute top-0 right-0 bottom-0 w-8 bg-gradient-to-l from-black/80 to-transparent pointer-events-none lg:hidden"></div>
                 </div>
             </div>
 
@@ -407,6 +411,20 @@
             }
         };
 
+        // --- NEW MOBILE FACULTY DROPDOWN LOGIC ---
+        window.toggleFacultyDropdown = () => {
+            const container = document.getElementById('hub-tabs-container');
+            const chevron = document.getElementById('facultyChevron');
+            
+            if (container.classList.contains('hidden')) {
+                container.classList.remove('hidden');
+                chevron.style.transform = 'rotate(180deg)';
+            } else {
+                container.classList.add('hidden');
+                chevron.style.transform = 'rotate(0deg)';
+            }
+        };
+
         // --- DATA: THE 11 FACULTIES ---
         const hubsData = [
             {
@@ -649,17 +667,39 @@
             tabContainer.innerHTML = '';
             hubsData.forEach((hub, index) => {
                 const btn = document.createElement('button');
-                // FIXED: Alignment and wrapping logic for desktop vs mobile
-                btn.className = `tab-btn w-full text-left px-6 py-5 text-xs font-bold font-mono uppercase tracking-widest text-gray-500 border-l-2 border-transparent flex items-center gap-3 shrink-0 group whitespace-nowrap lg:whitespace-normal lg:break-words`;
-                if (index === 0) btn.classList.add('active');
+                // FIXED: Text wrapping for desktop, clean look for mobile list
+                btn.className = `tab-btn w-full text-left px-4 md:px-6 py-4 md:py-5 text-xs font-bold font-mono uppercase tracking-widest text-gray-500 border-l-2 border-transparent flex items-center gap-3 shrink-0 group hover:bg-white/5 lg:whitespace-normal lg:break-words`;
+                
+                if (index === 0) {
+                    btn.classList.add('active');
+                    // Set initial label
+                    document.getElementById('activeFacultyLabel').innerText = hub.name;
+                }
+                
                 btn.innerHTML = `
                     <svg class="w-4 h-4 opacity-60 group-hover:opacity-100 transition-opacity flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${hub.icon}"></path></svg> 
                     <span class="group-hover:text-white transition-colors">${hub.name}</span>
                 `;
+                
                 btn.onclick = () => {
+                    // 1. Visual Active State
                     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
                     btn.classList.add('active');
+                    
+                    // 2. Update Label
+                    const label = document.getElementById('activeFacultyLabel');
+                    if(label) label.innerText = hub.name;
+
+                    // 3. Render Content
                     renderHubContent(index);
+                    
+                    // 4. Close Mobile Menu (if open)
+                    const container = document.getElementById('hub-tabs-container');
+                    const chevron = document.getElementById('facultyChevron');
+                    if (!container.classList.contains('hidden') && window.innerWidth < 1024) {
+                        container.classList.add('hidden');
+                        chevron.style.transform = 'rotate(0deg)';
+                    }
                 };
                 tabContainer.appendChild(btn);
             });
