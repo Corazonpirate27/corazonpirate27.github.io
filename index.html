@@ -519,6 +519,40 @@
             }
         };
 
+        // --- MOBILE TAB LOGIC (OPEN SOURCE vs PREMIUM) ---
+        window.switchMobileTab = (tab) => {
+            const osCol = document.getElementById('col-os');
+            const premCol = document.getElementById('col-prem');
+            const btnOs = document.getElementById('btn-os');
+            const btnPrem = document.getElementById('btn-prem');
+
+            if (!osCol || !premCol) return;
+
+            if(tab === 'os') {
+                osCol.classList.remove('hidden');
+                osCol.classList.add('block');
+                premCol.classList.add('hidden');
+                premCol.classList.remove('block');
+
+                btnOs.classList.add('bg-[#00ff41]', 'text-black');
+                btnOs.classList.remove('text-gray-500', 'hover:text-white');
+
+                btnPrem.classList.remove('bg-purple-400', 'text-black');
+                btnPrem.classList.add('text-gray-500', 'hover:text-white');
+            } else {
+                osCol.classList.add('hidden');
+                osCol.classList.remove('block');
+                premCol.classList.remove('hidden');
+                premCol.classList.add('block');
+
+                btnOs.classList.remove('bg-[#00ff41]', 'text-black');
+                btnOs.classList.add('text-gray-500', 'hover:text-white');
+
+                btnPrem.classList.add('bg-purple-400', 'text-black');
+                btnPrem.classList.remove('text-gray-500', 'hover:text-white');
+            }
+        };
+
         // --- DATA: THE 11 FACULTIES (2026 Expanded Edition) ---
         const hubsData = [
             {
@@ -963,12 +997,28 @@
 
                 } else {
                     // --- SPLIT ROADMAP VIEW ---
+
+                    // NEW: Mobile Toggle Switch
+                    const mobileToggle = document.createElement('div');
+                    mobileToggle.className = 'lg:hidden flex mb-6 bg-white/5 rounded-lg p-1 border border-white/10';
+                    mobileToggle.innerHTML = `
+                        <button onclick="switchMobileTab('os')" id="btn-os" class="flex-1 py-2 text-xs font-bold uppercase tracking-widest rounded transition-all bg-[#00ff41] text-black">Open Source</button>
+                        <button onclick="switchMobileTab('premium')" id="btn-prem" class="flex-1 py-2 text-xs font-bold uppercase tracking-widest rounded transition-all text-gray-500 hover:text-white">Premium / Audit</button>
+                    `;
+                    scrollArea.appendChild(mobileToggle);
+
                     const gridContainer = document.createElement('div');
                     gridContainer.className = 'grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-12';
 
                     // Helper to create a column
-                    const createColumn = (title, colorClass, borderColor, links, isRight) => {
+                    const createColumn = (title, colorClass, borderColor, links, isRight, id, initialHidden) => {
                         const col = document.createElement('div');
+                        col.id = id;
+                        // Responsive Visibility:
+                        // If initialHidden is true (Premium on Mobile): hidden lg:block
+                        // If initialHidden is false (OS on Mobile): block lg:block
+                        const visibilityClass = initialHidden ? 'hidden lg:block' : 'block lg:block';
+                        col.className = `${visibilityClass} w-full`;
 
                         // Header
                         col.innerHTML = `
@@ -1024,8 +1074,8 @@
                     const premiumLinks = hub.links.filter(l => l.type === 'Premium').sort((a,b) => a.level - b.level);
 
                     // Create Columns
-                    const leftCol = createColumn('Open Source Path', 'text-[#00ff41]', 'border-[#00ff41]/20', openSourceLinks, false);
-                    const rightCol = createColumn('Premium / Audit Path', 'text-purple-400', 'border-purple-500/20', premiumLinks, true);
+                    const leftCol = createColumn('Open Source Path', 'text-[#00ff41]', 'border-[#00ff41]/20', openSourceLinks, false, 'col-os', false);
+                    const rightCol = createColumn('Premium / Audit Path', 'text-purple-400', 'border-purple-500/20', premiumLinks, true, 'col-prem', true);
 
                     gridContainer.appendChild(leftCol);
                     gridContainer.appendChild(rightCol);
