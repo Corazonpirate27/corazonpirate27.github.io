@@ -1,0 +1,112 @@
+import React, { useRef, Suspense, useEffect, useState } from 'react';
+import { Canvas, useFrame } from '@react-three/fiber';
+import { OrbitControls, PerspectiveCamera, Environment, ContactShadows, useGLTF, Html } from '@react-three/drei';
+import * as THREE from 'three';
+
+// --- Placeholder Low-Poly Robot (Until user provides high-res GLB) ---
+// We can use a simple Group of meshes to represent a robot head if no GLB is loaded
+const RobotHead = ({ isSpeaking, analyser }) => {
+    const group = useRef();
+    const jawRef = useRef();
+    const [scale, setScale] = useState(1);
+
+    useFrame((state) => {
+        // Animation Logic
+        if (analyser) {
+            const dataArray = new Uint8Array(analyser.frequencyBinCount);
+            analyser.getByteFrequencyData(dataArray);
+            // Average volume
+            const volume = dataArray.reduce((src, a) => src + a, 0) / dataArray.length;
+            const targetScale = 1 + (volume / 255) * 0.2; // Pulse effect
+
+            // Smooth lerp
+            setScale(s => THREE.MathUtils.lerp(s, targetScale, 0.2));
+
+            // Jaw movement (if we had bones, we'd rotate them here)
+            if (jawRef.current) {
+                const jawOpen = (volume / 255) * 0.5;
+                jawRef.current.position.y = THREE.MathUtils.lerp(jawRef.current.position.y, -jawOpen, 0.2);
+            }
+        } else if (isSpeaking) {
+            // Fake animation if no analyser
+            const time = state.clock.elapsedTime;
+            setScale(1 + Math.sin(time * 10) * 0.05);
+            if (jawRef.current) {
+                jawRef.current.position.y = -Math.abs(Math.sin(time * 15)) * 0.1;
+            }
+        } else {
+            setScale(THREE.MathUtils.lerp(scale, 1, 0.1));
+            if (jawRef.current) jawRef.current.position.y = THREE.MathUtils.lerp(jawRef.current.position.y, 0, 0.1);
+        }
+
+        // Idle Float
+        if (group.current) {
+            group.current.position.y = Math.sin(state.clock.elapsedTime) * 0.1;
+            // Look interactively at mouse (mapped to state pointer)
+            const x = (state.pointer.x * Math.PI) / 10;
+            const y = (state.pointer.y * Math.PI) / 10;
+            group.current.rotation.y = THREE.MathUtils.lerp(group.current.rotation.y, x, 0.1);
+            group.current.rotation.x = THREE.MathUtils.lerp(group.current.rotation.x, -y, 0.1);
+        }
+    });
+
+    return (
+        <group ref={group} scale={scale}>
+            {/* Robot Head (Simulated Unreal Style) */}
+            {/* Main Cranium */}
+            <mesh position={[0, 0.5, 0]}>
+                <boxGeometry args={[1, 1, 1]} />
+                <meshStandardMaterial color="#333" roughness={0.2} metalness={0.9} />
+            </mesh>
+
+            {/* Eyes (Glowing) */}
+            <mesh position={[-0.2, 0.6, 0.51]}>
+                <sphereGeometry args={[0.1, 16, 16]} />
+                <meshStandardMaterial color="#22c55e" emissive="#22c55e" emissiveIntensity={2} />
+            </mesh>
+            <mesh position={[0.2, 0.6, 0.51]}>
+                <sphereGeometry args={[0.1, 16, 16]} />
+                <meshStandardMaterial color="#22c55e" emissive="#22c55e" emissiveIntensity={2} />
+            </mesh>
+
+            {/* Jaw */}
+            <mesh ref={jawRef} position={[0, -0.1, 0]}>
+                <boxGeometry args={[0.8, 0.4, 0.9]} />
+                <meshStandardMaterial color="#222" roughness={0.3} metalness={0.8} />
+            </mesh>
+        </group>
+    );
+};
+
+const Avatar3D = ({ isSpeaking }) => {
+    // In a real app, we would connect the AudioContext here to get the 'analyser' node
+    // For now, we simulate with isSpeaking prop
+
+    return (
+        <div className="w-full h-80 md:h-96 relative rounded-xl overflow-hidden border border-white/10 bg-black/40 shadow-2xl shadow-root-green/10">
+            {/* Unreal Engine Style Overlay */}
+            <div className="absolute top-4 left-4 z-10 text-[10px] uppercase font-mono text-root-green tracking-[0.2em] opacity-80">
+                System Online // Model_01
+            </div>
+
+            <Canvas shadows dpr={[1, 2]}>
+                <PerspectiveCamera makeDefault position={[0, 0, 4]} fov={50} />
+
+                {/* Cinematic Lighting */}
+                <ambientLight intensity={0.5} color="#220033" />
+                <spotLight position={[10, 10, 10]} angle={0.15} penumbra={1} intensity={10} castShadow shadow-mapSize={[1024, 1024]} color="#22c55e" />
+                <pointLight position={[-10, -10, -10]} intensity={1} color="#purple" />
+
+                {/* 3D Model */}
+                <Suspense fallback={<Html center><div className="text-white font-mono text-xs">LOADING MESH...</div></Html>}>
+                    <RobotHead isSpeaking={isSpeaking} />
+                    <ContactShadows resolution={1024} scale={10} blur={2.5} opacity={0.5} far={1} />
+                </Suspense>
+
+                <Environment preset="city" />
+            </Canvas>
+        </div>
+    );
+};
+
+export default Avatar3D;
