@@ -31,8 +31,13 @@ const MatrixLink = ({ to, name, active }) => {
         }, 30);
     };
 
-    // Reset on unmount or mouse leave buffer (optional, but let's keep it simple: it solves to completion)
-    // Actually, force text back to name if needed, but the effect solves automatically.
+    useEffect(() => {
+        return () => {
+            if (intervalRef.current) {
+                clearInterval(intervalRef.current);
+            }
+        };
+    }, []);
 
     return (
         <Link
