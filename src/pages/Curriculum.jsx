@@ -1,8 +1,64 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Lock, Unlock, ArrowRight, Zap, BookOpen, ChevronDown, ChevronUp, ExternalLink } from 'lucide-react';
+import { Lock, Unlock, ArrowRight, Zap, BookOpen, ChevronDown, ChevronUp, ExternalLink, Shield, Database, Cpu, Wifi, Layers, Server, Cloud, GitBranch, Binary, Smartphone, Blocks, Gamepad, ServerCrash, Bug, Gift, Sparkles, MessageSquare, Monitor } from 'lucide-react';
+
+const ICON_MAP = {
+    Shield: Shield,
+    Database: Database,
+    Cpu: Cpu,
+    Wifi: Wifi,
+    Layers: Layers,
+    Server: Server,
+    Cloud: Cloud,
+    GitBranch: GitBranch,
+    Binary: Binary,
+    Smartphone: Smartphone,
+    Blocks: Blocks,
+    Gamepad: Gamepad,
+    ServerCrash: ServerCrash,
+    Bug: Bug,
+    Gift: Gift,
+    Sparkles: Sparkles,
+    MessageSquare: MessageSquare,
+    Monitor: Monitor
+};
 
 const courses = [
+    {
+        id: 'genai', name: 'Generative AI Engineering',
+        icon: 'Sparkles',
+        meta: { salary: '$130k - $220k', time: '6 - 12 Months', role: 'GenAI Engineer' },
+        links: [
+            // Open Source
+            { level: 1, title: 'LangChain Docs', url: 'https://python.langchain.com/docs/get_started/introduction', tag: 'LangChain', type: 'Open Source' },
+            { level: 2, title: 'LlamaIndex', url: 'https://docs.llamaindex.ai/en/stable/', tag: 'LlamaIndex', type: 'Open Source' },
+            { level: 3, title: 'Hugging Face Diffusers', url: 'https://huggingface.co/docs/diffusers/index', tag: 'Hugging Face', type: 'Open Source' },
+            { level: 4, title: 'OpenAI Cookbook', url: 'https://github.com/openai/openai-cookbook', tag: 'GitHub', type: 'Open Source' },
+            { level: 5, title: 'Local LLaMA', url: 'https://github.com/ggerganov/llama.cpp', tag: 'GitHub', type: 'Open Source' },
+            { level: 6, title: 'Vector Databases', url: 'https://www.pinecone.io/learn/', tag: 'Pinecone', type: 'Open Source' },
+            // Premium
+            { level: 1, title: 'Generative AI with LLMs', url: 'https://www.coursera.org/learn/generative-ai-with-llms', tag: 'DeepLearning.AI', type: 'Premium' },
+            { level: 2, title: 'Building Systems with ChatGPT', url: 'https://www.deeplearning.ai/short-courses/building-systems-with-chatgpt/', tag: 'DeepLearning.AI', type: 'Premium' },
+            { level: 3, title: 'Fine Tuning LLMs', url: 'https://www.deeplearning.ai/short-courses/finetuning-large-language-models/', tag: 'DeepLearning.AI', type: 'Premium' },
+            { level: 4, title: 'Prompt Engineering Spec', url: 'https://www.coursera.org/specializations/prompt-engineering', tag: 'Vanderbilt', type: 'Premium' }
+        ]
+    },
+    {
+        id: 'prompt', name: 'Advanced Prompt Engineering',
+        icon: 'MessageSquare',
+        meta: { salary: '$90k - $160k', time: '3 - 6 Months', role: 'Prompt Engineer' },
+        links: [
+            // Open Source
+            { level: 1, title: 'Prompt Engineering Guide', url: 'https://www.promptingguide.ai/', tag: 'The Bible', type: 'Open Source' },
+            { level: 2, title: 'Learn Prompting', url: 'https://learnprompting.org/', tag: 'Course', type: 'Open Source' },
+            { level: 3, title: 'ChatGPT Prompting', url: 'https://www.deeplearning.ai/short-courses/chatgpt-prompt-engineering-for-developers/', tag: 'DeepLearning.AI', type: 'Open Source' },
+            { level: 4, title: 'Midjourney Docs', url: 'https://docs.midjourney.com/', tag: 'Midjourney', type: 'Open Source' },
+            { level: 5, title: 'Anthropic Prompt Guide', url: 'https://docs.anthropic.com/claude/docs/prompt-engineering', tag: 'Anthropic', type: 'Open Source' },
+            // Premium
+            { level: 1, title: 'Prompt Engineering for ChatGPT', url: 'https://www.coursera.org/learn/prompt-engineering', tag: 'Vanderbilt', type: 'Premium' },
+            { level: 2, title: 'Advanced Prompting', url: 'https://www.udemy.com/course/prompt-engineering-with-chatgpt-4/', tag: 'Udemy', type: 'Premium' }
+        ]
+    },
     {
         id: 'cyber', name: 'Cybersecurity Operations',
         icon: 'Shield',
@@ -340,12 +396,17 @@ const courses = [
 const CourseCard = ({ course }) => {
     const [expanded, setExpanded] = useState(false);
 
+    // Icon Component
+    const IconComponent = ICON_MAP[course.icon] || Monitor;
+
     // Choose image based on course type
     const getImage = (id) => {
         switch (id) {
-            case 'cyber': return '/matrix_pro_cyber.png'; // High-Fidelity
-            case 'data': return '/matrix_pro_data.png';   // High-Fidelity
+            case 'cyber': return '/matrix_pro_cyber.png';
+            case 'data': return '/matrix_pro_data.png';
             case 'ai': return '/matrix_curr_ai.png';
+            case 'genai': return '/matrix_curr_ai.png'; // Reuse AI
+            case 'prompt': return '/matrix_curr_ai.png'; // Reuse AI
             case 'iot': return '/matrix_curr_iot.png';
             case 'fullstack': return '/matrix_code_banner.png';
             case 'devops': return '/matrix_curr_cloud.png';
@@ -381,7 +442,7 @@ const CourseCard = ({ course }) => {
                     <span className="text-[10px] uppercase tracking-widest font-bold px-3 py-1 rounded-full border border-white/10 bg-white/5 text-gray-400">
                         {course.meta.role}
                     </span>
-                    <span className="text-root-green">{course.icon}</span>
+                    <span className="text-root-green"><IconComponent className="w-6 h-6" /></span>
                 </div>
 
                 <h3 className="text-xl font-bold text-white mb-2 font-serif group-hover:text-root-green transition-colors">{course.name}</h3>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Settings, User, Cpu, AlertTriangle, Save, RefreshCw, Key, Database, ChevronDown, Volume2, VolumeX, PlayCircle, StopCircle, Mic, Globe, Cloud } from 'lucide-react';
+import { Send, Settings, User, Cpu, AlertTriangle, Save, RefreshCw, Key, Database, ChevronDown, Volume2, VolumeX, PlayCircle, StopCircle, Mic, Globe, Cloud, Trash2, Download, X } from 'lucide-react';
 import AIAvatar from '../components/AIAvatar';
 
 const PROVIDERS = {
@@ -77,28 +77,34 @@ const Intelligence = () => {
     useEffect(() => {
         const saved = localStorage.getItem('root_ai_config_v2');
         if (saved) {
-            const parsed = JSON.parse(saved);
-            if (parsed.apiKeys) setApiKeys(parsed.apiKeys);
-            if (parsed.activeProvider && PROVIDERS[parsed.activeProvider]) setActiveProvider(parsed.activeProvider);
-            if (parsed.selectedVoiceURI) setSelectedVoiceURI(parsed.selectedVoiceURI);
+            try {
+                const parsed = JSON.parse(saved);
+                if (parsed.apiKeys) setApiKeys(parsed.apiKeys);
+                if (parsed.activeProvider && PROVIDERS[parsed.activeProvider]) setActiveProvider(parsed.activeProvider);
+                if (parsed.selectedVoiceURI) setSelectedVoiceURI(parsed.selectedVoiceURI);
 
-            // Validate Models
-            if (parsed.providerConfigs) {
-                const validatedConfigs = { ...parsed.providerConfigs };
-                Object.keys(validatedConfigs).forEach(provider => {
-                    const savedModel = validatedConfigs[provider]?.model;
-                    if (PROVIDERS[provider] && !PROVIDERS[provider].models.includes(savedModel)) {
-                        validatedConfigs[provider].model = PROVIDERS[provider].defaultModel;
-                    }
-                });
-                setProviderConfigs(validatedConfigs);
+                // Validate Models
+                if (parsed.providerConfigs) {
+                    const validatedConfigs = { ...parsed.providerConfigs };
+                    Object.keys(validatedConfigs).forEach(provider => {
+                        const savedModel = validatedConfigs[provider]?.model;
+                        if (PROVIDERS[provider] && !PROVIDERS[provider].models.includes(savedModel)) {
+                            validatedConfigs[provider].model = PROVIDERS[provider].defaultModel;
+                        }
+                    });
+                    setProviderConfigs(validatedConfigs);
+                }
+            } catch (e) {
+                console.error("Failed to load config", e);
             }
         } else {
             // Migration from v1
             const old = localStorage.getItem('root_ai_config');
             if (old) {
-                const p = JSON.parse(old);
-                if (p.apiKey) setApiKeys(prev => ({ ...prev, groq: p.apiKey }));
+                try {
+                    const p = JSON.parse(old);
+                    if (p.apiKey) setApiKeys(prev => ({ ...prev, groq: p.apiKey }));
+                } catch (e) { console.error("Migration failed", e); }
             }
         }
     }, []);
@@ -137,7 +143,7 @@ const Intelligence = () => {
             const scroll = scrollRef.current;
             scroll.scrollTop = scroll.scrollHeight;
         }
-    }, [messages]);
+    }, [messages, isLoading]);
 
     const handleSpeak = (text) => {
         if (!soundEnabled || !window.speechSynthesis) return;
@@ -196,13 +202,6 @@ const Intelligence = () => {
         for (const msg of visibleMessages) {
             if (!window.speechSynthesis) break;
 
-            // Check if user cancelled
-            // Note: Since we are in a loop, we rely on checking state, but state updates are async.
-            // A better way for simple sync is checking a ref or just breaking if canceled.
-            // Here we rely on the button toggling 'isReadingAll', but inside the loop we need to be careful.
-            // Actually, the simplest way to "Read All" with synthesis is to queue them all up?
-            // Queuing them all up is risky if user wants to stop immediately (cancel clears queue, so that's good).
-
             const textToRead = `${msg.role === 'user' ? 'User' : 'Root'} says: ${msg.content}`;
             const utterance = new SpeechSynthesisUtterance(textToRead);
             utterance.rate = 1.0;
@@ -225,7 +224,11 @@ const Intelligence = () => {
 
     const saveConfig = () => {
         const payload = { apiKeys, activeProvider, providerConfigs, selectedVoiceURI };
-        localStorage.setItem('root_ai_config_v2', JSON.stringify(payload));
+        if (storageMode === 'local') {
+            localStorage.setItem('root_ai_config_v2', JSON.stringify(payload));
+        } else {
+             localStorage.removeItem('root_ai_config_v2'); // Clear if switching to session
+        }
         setShowSettings(false);
         setMessages(prev => [...prev, { role: 'system', content: `System updated. Active Provider: ${PROVIDERS[activeProvider].name}` }]);
     };
@@ -297,11 +300,28 @@ const Intelligence = () => {
         }
     };
 
+    const clearChat = () => {
+        if (window.confirm("Purge all neural data?")) {
+            setMessages([{ role: 'system', content: 'ROOT.AI initialized. Select your provider and configure API access to begin.' }]);
+        }
+    };
+
+    const downloadChat = () => {
+        const text = messages.map(m => `${m.role.toUpperCase()}: ${m.content}`).join('\n\n');
+        const blob = new Blob([text], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `root-ai-log-${new Date().toISOString()}.txt`;
+        a.click();
+    };
+
+
     return (
         <div className="max-w-5xl mx-auto px-4 py-8 h-[calc(100vh-80px)] flex flex-col">
 
             {/* Header */}
-            <div className="flex justify-between items-center mb-6">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                 <div>
                     <h2 className="text-2xl md:text-3xl font-serif font-bold text-white flex items-center gap-3">
                         <Cpu className="text-root-green" />
@@ -317,42 +337,61 @@ const Intelligence = () => {
                     </div>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                     {/* AVATAR DISPLAY */}
-                    <div className="mr-8 w-24 h-24 md:w-32 md:h-32">
+                    <div className="mr-4 w-16 h-16 md:w-20 md:h-20">
                         <AIAvatar isSpeaking={isSpeaking} isThinking={isLoading} />
                     </div>
 
-                    <button
-                        onClick={() => {
-                            if (soundEnabled && isSpeaking) {
-                                window.speechSynthesis.cancel();
-                                setIsSpeaking(false);
-                            }
-                            setSoundEnabled(!soundEnabled);
-                        }}
-                        className={`p-3 rounded-lg border transition-colors ${soundEnabled ? 'border-root-green text-root-green bg-root-green/10' : 'border-white/10 text-gray-500 hover:text-white'}`}
-                    >
-                        {soundEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
-                    </button>
+                    <div className="flex gap-2">
+                        <button
+                            onClick={() => {
+                                if (soundEnabled && isSpeaking) {
+                                    window.speechSynthesis.cancel();
+                                    setIsSpeaking(false);
+                                }
+                                setSoundEnabled(!soundEnabled);
+                            }}
+                            className={`p-2 md:p-3 rounded-lg border transition-colors ${soundEnabled ? 'border-root-green text-root-green bg-root-green/10' : 'border-white/10 text-gray-500 hover:text-white'}`}
+                            title="Toggle Sound"
+                        >
+                            {soundEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
+                        </button>
 
-                    <button
-                        onClick={handleReadConversation}
-                        className={`p-3 rounded-lg border transition-colors flex items-center gap-2
-                             ${isReadingAll ? 'border-red-500 text-red-500 bg-red-500/10' : 'border-white/10 text-gray-500 hover:text-white'}
-                        `}
-                        title="Read Conversation"
-                    >
-                        {isReadingAll ? <StopCircle className="w-5 h-5" /> : <PlayCircle className="w-5 h-5" />}
-                        <span className="text-xs font-bold uppercase hidden md:inline">{isReadingAll ? 'Stop' : 'Read Chat'}</span>
-                    </button>
+                        <button
+                            onClick={handleReadConversation}
+                            className={`p-2 md:p-3 rounded-lg border transition-colors flex items-center gap-2
+                                 ${isReadingAll ? 'border-red-500 text-red-500 bg-red-500/10' : 'border-white/10 text-gray-500 hover:text-white'}
+                            `}
+                            title="Read Conversation"
+                        >
+                            {isReadingAll ? <StopCircle className="w-5 h-5" /> : <PlayCircle className="w-5 h-5" />}
+                        </button>
 
-                    <button
-                        onClick={() => setShowSettings(true)}
-                        className="p-3 rounded-lg border border-white/10 hover:border-root-green hover:text-root-green transition-colors bg-white/5"
-                    >
-                        <Settings className="w-5 h-5" />
-                    </button>
+                         <button
+                            onClick={clearChat}
+                            className="p-2 md:p-3 rounded-lg border border-white/10 hover:border-red-500 hover:text-red-500 transition-colors bg-white/5"
+                            title="Clear Chat"
+                        >
+                            <Trash2 className="w-5 h-5" />
+                        </button>
+
+                         <button
+                            onClick={downloadChat}
+                            className="p-2 md:p-3 rounded-lg border border-white/10 hover:border-root-green hover:text-root-green transition-colors bg-white/5"
+                            title="Download Chat Log"
+                        >
+                            <Download className="w-5 h-5" />
+                        </button>
+
+                        <button
+                            onClick={() => setShowSettings(true)}
+                            className="p-2 md:p-3 rounded-lg border border-white/10 hover:border-root-green hover:text-root-green transition-colors bg-white/5"
+                            title="Settings"
+                        >
+                            <Settings className="w-5 h-5" />
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -437,7 +476,7 @@ const Intelligence = () => {
                                     <Database className="w-5 h-5 text-root-green" />
                                     Provider Configuration
                                 </h3>
-                                <button onClick={() => setShowSettings(false)} className="text-gray-500 hover:text-white"><XIcon /></button>
+                                <button onClick={() => setShowSettings(false)} className="text-gray-500 hover:text-white"><X /></button>
                             </div>
 
                             <div className="space-y-8">
@@ -563,9 +602,5 @@ const Intelligence = () => {
         </div>
     );
 };
-
-const XIcon = () => (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-);
 
 export default Intelligence;

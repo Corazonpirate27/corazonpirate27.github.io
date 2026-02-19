@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, X, Trophy, Activity, RefreshCw, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Hash } from 'lucide-react';
+import { Play, X, Trophy, Activity, RefreshCw, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Hash, Pause } from 'lucide-react';
 
 // STABLE 6 GAMES ONLY - Removing unstable experimental games
 const games = [
@@ -100,7 +100,10 @@ const Arcade = () => {
                                         <span className="text-root-green">>></span> {activeGame.title}
                                     </h3>
                                 </div>
-                                <button onClick={() => setActiveGame(null)} className="p-2 hover:text-white text-gray-500 hover:bg-white/10 rounded"><X /></button>
+                                <div className="flex items-center gap-2">
+                                     {/* We can add Pause button here too, but GameEngine handles state. */}
+                                    <button onClick={() => setActiveGame(null)} className="p-2 hover:text-white text-gray-500 hover:bg-white/10 rounded"><X /></button>
+                                </div>
                             </div>
                             <div className="flex-1 bg-black relative flex flex-col items-center justify-center overflow-hidden">
                                 <GameEngine gameId={activeGame.id} color={activeGame.color} />
@@ -113,9 +116,9 @@ const Arcade = () => {
     );
 };
 
-const MobileControls = ({ onKey }) => {
+const MobileControls = ({ onKey, onPause }) => {
     return (
-        <div className="md:hidden pb-8 pt-4 w-full px-4 flex justify-between items-end shrink-0">
+        <div className="md:hidden pb-8 pt-4 w-full px-4 flex justify-between items-end shrink-0 relative z-20">
             {/* D-Pad */}
             <div className="grid grid-cols-3 gap-2">
                 <div></div>
@@ -126,10 +129,15 @@ const MobileControls = ({ onKey }) => {
                 <button onPointerDown={() => onKey('ArrowRight')} className="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center active:bg-root-green/50"><ChevronRight /></button>
             </div>
 
-            {/* Action Buttons */}
-            <button onPointerDown={() => onKey('Space')} className="w-20 h-20 bg-red-500/20 border border-red-500/50 rounded-full flex items-center justify-center text-red-500 font-bold active:bg-red-500 active:text-black">
-                FIRE
-            </button>
+            <div className="flex flex-col gap-4">
+                 <button onPointerDown={onPause} className="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center active:bg-white/30 text-xs font-bold uppercase tracking-widest text-gray-400">
+                    Pause
+                 </button>
+                 {/* Action Buttons */}
+                <button onPointerDown={() => onKey('Space')} className="w-20 h-20 bg-red-500/20 border border-red-500/50 rounded-full flex items-center justify-center text-red-500 font-bold active:bg-red-500 active:text-black">
+                    FIRE
+                </button>
+            </div>
         </div>
     );
 };
@@ -138,44 +146,58 @@ const GameEngine = ({ gameId, color }) => {
     const canvasRef = useRef(null);
     const [score, setScore] = useState(0);
     const [gameState, setGameState] = useState('INIT');
+    const gameStateRef = useRef('INIT'); // Sync with state
     const [level, setLevel] = useState(1);
     const [memoryCards, setMemoryCards] = useState([]);
 
+    // Instance ID to force reset on new game
+    const [instanceId, setInstanceId] = useState(0);
+
+    // Sync Ref
+    useEffect(() => {
+        gameStateRef.current = gameState;
+    }, [gameState]);
+
+    // Toggle Pause
+    const togglePause = () => {
+        if (gameState === 'PLAYING') setGameState('PAUSED');
+        else if (gameState === 'PAUSED') setGameState('PLAYING');
+    };
+
+    // Start Game
+    const startGame = () => {
+        setInstanceId(prev => prev + 1);
+        setGameState('PLAYING');
+        setScore(0);
+        setLevel(1);
+    };
+
     // --- CANVAS ENGINE ---
     useEffect(() => {
-        if (gameId === 'memory') return; // Memory is pure React
+        if (gameId === 'memory') return;
 
         const canvas = canvasRef.current; if (!canvas) return;
         const ctx = canvas.getContext('2d');
         let frameId;
 
-        // Dynamic Resizing Logic
+        // Resizing Logic
         const updateCanvasSize = () => {
             const container = canvas.parentElement;
             if (container) {
                 const rect = container.getBoundingClientRect();
-                // Maintain 3:2 aspect ratio but fit width
                 canvas.width = rect.width;
                 canvas.height = rect.width * (2 / 3);
             }
         };
         updateCanvasSize();
-        // Resize listener handled via simple re-renders or ResizeObserver is better, 
-        // but for this game loop, we need to scale logic. 
-        // SIMPLIFICATION: Keep internal logic at 600x400, scale visually via CSS (which we already do).
-        // BUT user wanted "Optimization". 
-        // The issue with CSS scaling is valid; coordinate mapping (mouse clicks) would break if we had them.
-        // Since we use Keyboard/Touch Buttons, CSS scaling is actually PERFORMANT and SAFE.
-        // So we will stick to fixed internal resolution for logic consistency, but ensure CSS handles the display.
 
-        // Re-affirming logic resolution
+        // Fixed internal logic resolution
         const width = 600; const height = 400;
-        canvas.width = width; canvas.height = height; // Set internal buffer match logic
+        canvas.width = width; canvas.height = height;
 
         let frames = 0, pScore = 0, pLevel = 1;
 
-        // ENTITY STATE
-        // Slower initial speeds
+        // --- GAME VARIABLES ---
         let snake = [{ x: 15, y: 10 }], food = { x: 20, y: 10 }, dx = 0, dy = 0;
         let ball = { x: width / 2, y: height / 2, dx: 0, dy: 0, r: 6 }, p1 = { y: 160, h: 80 }, p2 = { y: 160, h: 80 };
         let paddle = { x: 250, w: 100 }, bricks = [];
@@ -185,33 +207,38 @@ const GameEngine = ({ gameId, color }) => {
         const initBricks = () => { bricks = []; for (let c = 0; c < 8; c++) for (let r = 0; r < 4; r++) bricks.push({ x: c * 70 + 20, y: r * 20 + 30, s: 1 }); };
         const initInvaders = () => { invaders = []; for (let c = 0; c < 8; c++) for (let r = 0; r < 3; r++) invaders.push({ x: c * 50 + 50, y: r * 30 + 30, w: 20, h: 15, a: true }); };
 
-        const reset = () => {
-            pScore = 0; frames = 0; setScore(0); pLevel = 1; setLevel(1);
-            if (gameId === 'snake') { snake = [{ x: 15, y: 10 }]; dx = 1; dy = 0; }
-            if (gameId === 'pong') { ball = { x: 300, y: 200, dx: 3, dy: 3, r: 6 }; } // Slower Pong
-            if (gameId === 'breakout') { paddle = { x: 250, w: 100 }; ball = { x: 300, y: 350, dx: 3, dy: -3, r: 6 }; initBricks(); } // Slower Breakout
-            if (gameId === 'invaders') { pX = 280; bullets = []; initInvaders(); }
-            if (gameId === 'typer') { words = []; }
-        };
+        // Game Init based on ID
+        if (gameId === 'snake') { snake = [{ x: 15, y: 10 }]; dx = 1; dy = 0; }
+        if (gameId === 'pong') { ball = { x: 300, y: 200, dx: 3, dy: 3, r: 6 }; }
+        if (gameId === 'breakout') { paddle = { x: 250, w: 100 }; ball = { x: 300, y: 350, dx: 3, dy: -3, r: 6 }; initBricks(); }
+        if (gameId === 'invaders') { pX = 280; bullets = []; initInvaders(); }
+        if (gameId === 'typer') { words = []; }
 
         const render = () => {
-            if (gameState !== 'PLAYING') return;
+             // Handle Pause
+            if (gameStateRef.current === 'PAUSED') {
+                frameId = requestAnimationFrame(render);
+                return;
+            }
+            // Stop if not playing
+            if (gameStateRef.current !== 'PLAYING') return;
+
             // Clear
             ctx.fillStyle = '#050505'; ctx.fillRect(0, 0, width, height);
             frames++;
 
             // === SNAKE ===
             if (gameId === 'snake') {
-                // Slower Snake: Move every 8 frames initially, gets faster
                 const speed = Math.max(2, 10 - pLevel);
                 if (frames % speed === 0) {
                     const head = { x: snake[0].x + dx, y: snake[0].y + dy };
-                    // Wall Wrap or Death? Let's do Death for 'Pit'
-                    if (head.x < 0 || head.x >= 30 || head.y < 0 || head.y >= 20 || snake.some(s => s.x === head.x && s.y === head.y)) { setGameState('GAMEOVER'); return; }
+                    if (head.x < 0 || head.x >= 30 || head.y < 0 || head.y >= 20 || snake.some(s => s.x === head.x && s.y === head.y)) {
+                        setGameState('GAMEOVER'); return;
+                    }
                     snake.unshift(head);
                     if (head.x === food.x && head.y === food.y) {
                         pScore += 10; setScore(pScore);
-                        if (pScore % 50 === 0) { pLevel++; setLevel(pLevel); } // Level up every 50 pts
+                        if (pScore % 50 === 0) { pLevel++; setLevel(pLevel); }
                         food = { x: Math.floor(Math.random() * 30), y: Math.floor(Math.random() * 20) };
                     }
                     else snake.pop();
@@ -224,15 +251,11 @@ const GameEngine = ({ gameId, color }) => {
             if (gameId === 'pong') {
                 ball.x += ball.dx; ball.y += ball.dy;
                 if (ball.y < 0 || ball.y > height) ball.dy = -ball.dy;
-                // Paddles
                 if (ball.x < 20 && ball.y > p1.y && ball.y < p1.y + p1.h) ball.dx = Math.abs(ball.dx);
                 if (ball.x > width - 20 && ball.y > p2.y && ball.y < p2.y + p2.h) ball.dx = -Math.abs(ball.dx);
-                // Score
                 if (ball.x < 0 || ball.x > width) { setGameState('GAMEOVER'); return; }
-                // AI
                 const targetY = ball.y - p2.h / 2;
-                p2.y += (targetY - p2.y) * (0.05 + (pLevel * 0.01)); // AI gets smarter with level
-
+                p2.y += (targetY - p2.y) * (0.05 + (pLevel * 0.01));
                 ctx.fillStyle = 'white'; ctx.beginPath(); ctx.arc(ball.x, ball.y, 6, 0, Math.PI * 2); ctx.fill();
                 ctx.fillRect(10, p1.y, 10, p1.h); ctx.fillRect(width - 20, p2.y, 10, p2.h);
                 if (frames % 200 === 0) { pScore += 10; setScore(pScore); pLevel = Math.min(10, Math.floor(pScore / 50) + 1); setLevel(pLevel); }
@@ -245,16 +268,11 @@ const GameEngine = ({ gameId, color }) => {
                 if (ball.y < 0) ball.dy = -ball.dy;
                 if (ball.y > height) { setGameState('GAMEOVER'); return; }
                 if (ball.y > 375 && ball.x > paddle.x && ball.x < paddle.x + paddle.w) ball.dy = -Math.abs(ball.dy);
-
                 bricks.forEach(b => {
                     if (b.s) {
                         if (ball.x > b.x && ball.x < b.x + 60 && ball.y > b.y && ball.y < b.y + 20) {
                             ball.dy = -ball.dy; b.s = 0; pScore += 10; setScore(pScore);
-                            if (pScore % 80 === 0) { // Clear screen level up
-                                pLevel++; setLevel(pLevel);
-                                ball.dx *= 1.1; ball.dy *= 1.1; // Speed up
-                                initBricks();
-                            }
+                            if (pScore % 80 === 0) { pLevel++; setLevel(pLevel); ball.dx *= 1.1; ball.dy *= 1.1; initBricks(); }
                         }
                         ctx.fillStyle = color.split('-')[1]; ctx.fillRect(b.x, b.y, 60, 15);
                     }
@@ -267,14 +285,11 @@ const GameEngine = ({ gameId, color }) => {
             if (gameId === 'invaders') {
                 ctx.fillStyle = '#00ff41'; ctx.fillRect(pX, 380, 30, 20);
                 bullets.forEach((b, i) => { b.y -= 8; ctx.fillStyle = 'white'; ctx.fillRect(b.x, b.y, 2, 8); if (b.y < 0) bullets.splice(i, 1); });
-
-                // Move invaders slower: every 60 frames -> 50 -> 40 based on level
                 const moveRate = Math.max(20, 70 - (pLevel * 5));
                 if (frames % moveRate === 0) {
                     let edge = false; invaders.forEach(t => { if (t.a) { t.x += 10 * invDir; if (t.x > width - 30 || t.x < 10) edge = true; } });
                     if (edge) { invDir *= -1; invaders.forEach(t => t.y += 20); }
                 }
-
                 invaders.forEach(t => {
                     if (t.a) {
                         ctx.fillStyle = '#eab308'; ctx.fillRect(t.x, t.y, 20, 15);
@@ -291,12 +306,10 @@ const GameEngine = ({ gameId, color }) => {
 
             // === TYPER ===
             if (gameId === 'typer') {
-                // Slower spawn: 100 frames initially
                 const spawnRate = Math.max(30, 100 - (pLevel * 5));
                 if (frames % spawnRate === 0) words.push({ t: wordList[Math.floor(Math.random() * wordList.length)], x: Math.random() * (width - 100), y: 0 });
-
                 words.forEach(w => {
-                    w.y += (0.5 + (pLevel * 0.1)); // Fall speed increases
+                    w.y += (0.5 + (pLevel * 0.1));
                     ctx.fillStyle = '#06b6d4'; ctx.font = '20px monospace'; ctx.fillText(w.t, w.x, w.y);
                     if (w.y > height) setGameState('GAMEOVER');
                 });
@@ -305,13 +318,21 @@ const GameEngine = ({ gameId, color }) => {
             frameId = requestAnimationFrame(render);
         };
 
-        if (gameState === 'PLAYING') { reset(); render(); }
+        render();
 
         const handleKey = (e) => {
-            // Prevent scrolling
             if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Space"].indexOf(e.code) > -1) {
                 e.preventDefault();
             }
+
+            // Allow Pause on Escape or P
+            if (e.code === 'Escape' || e.key === 'p' || e.key === 'P') {
+                 if (gameStateRef.current === 'PLAYING') setGameState('PAUSED');
+                 else if (gameStateRef.current === 'PAUSED') setGameState('PLAYING');
+                 return;
+            }
+
+            if (gameStateRef.current !== 'PLAYING') return;
 
             if (gameId === 'snake') {
                 if (e.code === 'ArrowUp' && dy !== 1) { dx = 0; dy = -1; }
@@ -341,8 +362,6 @@ const GameEngine = ({ gameId, color }) => {
         };
 
         window.addEventListener('keydown', handleKey);
-
-        // Listen for dispatched events from Mobile Controls
         const handleDispatch = (e) => handleKey(e.detail);
         window.addEventListener('activeGameKey', handleDispatch);
 
@@ -352,15 +371,23 @@ const GameEngine = ({ gameId, color }) => {
             window.removeEventListener('activeGameKey', handleDispatch);
         };
 
-    }, [gameId, gameState]);
+    }, [gameId, instanceId]); // IMPORTANT: Re-run on new instance
 
     // --- MEMORY ENGINE ---
+    // Memory uses React State, so we need to reset it on instanceId change too.
     useEffect(() => {
-        if (gameId !== 'memory' || gameState !== 'PLAYING') return;
+        if (gameId !== 'memory') return;
+        // Init memory
         const icons = ['⚡', '💀', '💻', '💾', '📡', '🕹️', '🛡️', '👾'];
         const deck = [...icons, ...icons].sort(() => Math.random() - 0.5).map((poly, i) => ({ id: i, icon: poly, flipped: false, solved: false }));
         setMemoryCards(deck); setScore(0);
-    }, [gameId, gameState]);
+        setGameState('INIT'); // Wait for start
+
+        // If we want immediate start, we can check instanceId > 0?
+        // But logic below expects "PLAYING"
+        if (instanceId > 0) setGameState('PLAYING');
+
+    }, [gameId, instanceId]);
 
     const handleCardClick = (id) => {
         if (gameState !== 'PLAYING') return;
@@ -392,42 +419,69 @@ const GameEngine = ({ gameId, color }) => {
     if (gameId === 'memory') {
         return (
             <div className="w-full h-full flex flex-col items-center justify-center bg-black p-4">
-                {gameState === 'PLAYING' ? (
-                    <div className="grid grid-cols-4 gap-4">
-                        {memoryCards.map(c => (
-                            <button key={c.id} onClick={() => handleCardClick(c.id)} className={`w-16 h-16 rounded text-3xl flex items-center justify-center transition-all ${c.flipped || c.solved ? 'bg-purple-900 rotate-y-180' : 'bg-gray-800'}`}>
-                                {(c.flipped || c.solved) ? c.icon : '?'}
+                {gameState === 'PLAYING' || gameState === 'PAUSED' ? (
+                    <div className="flex flex-col items-center gap-4">
+                        <div className="flex items-center gap-4 text-white font-mono">
+                            <span>Score: {score}</span>
+                            <button onClick={togglePause} className="p-2 border border-white/10 rounded hover:bg-white/10">
+                                {gameState === 'PAUSED' ? <Play className="w-4 h-4" /> : <Pause className="w-4 h-4" />}
                             </button>
-                        ))}
+                        </div>
+                        {gameState === 'PAUSED' && <div className="text-yellow-500 font-bold tracking-widest animate-pulse">PAUSED</div>}
+                        <div className={`grid grid-cols-4 gap-4 ${gameState === 'PAUSED' ? 'opacity-50 pointer-events-none' : ''}`}>
+                            {memoryCards.map(c => (
+                                <button key={c.id} onClick={() => handleCardClick(c.id)} className={`w-16 h-16 rounded text-3xl flex items-center justify-center transition-all ${c.flipped || c.solved ? 'bg-purple-900 rotate-y-180' : 'bg-gray-800'}`}>
+                                    {(c.flipped || c.solved) ? c.icon : '?'}
+                                </button>
+                            ))}
+                        </div>
                     </div>
-                ) : <Overlay gameState={gameState} score={score} onStart={() => setGameState('PLAYING')} />}
+                ) : <Overlay gameState={gameState} score={score} onStart={startGame} onResume={togglePause} />}
             </div>
         );
     }
 
     return (
         <div className="relative flex flex-col justify-center items-center w-full h-full">
-            <div className="flex-1 flex items-center justify-center w-full px-2">
+            <div className="flex-1 flex items-center justify-center w-full px-2 relative">
                 <canvas ref={canvasRef} className="bg-black shadow-2xl rounded w-full max-w-[600px] aspect-[3/2] object-contain" style={{ imageRendering: 'pixelated' }} />
-                {gameState !== 'PLAYING' && <Overlay gameState={gameState} score={score} onStart={() => setGameState('PLAYING')} />}
+
+                {/* Pause Button (Desktop) */}
+                {gameState === 'PLAYING' && (
+                     <button
+                        onClick={togglePause}
+                        className="absolute top-4 right-4 p-2 bg-black/50 border border-white/10 rounded hover:bg-white/10 text-white z-20 hidden md:block"
+                     >
+                        <Pause className="w-4 h-4" />
+                     </button>
+                )}
+
+                {gameState !== 'PLAYING' && <Overlay gameState={gameState} score={score} onStart={startGame} onResume={togglePause} />}
             </div>
 
             {gameState === 'PLAYING' && (
-                <MobileControls onKey={triggerKey} />
+                <MobileControls onKey={triggerKey} onPause={togglePause} />
             )}
         </div>
     );
 };
 
-const Overlay = ({ gameState, score, onStart }) => (
-    <div className="absolute inset-0 bg-black/80 flex items-center justify-center flex-col gap-4 z-10 backdrop-blur-sm">
+const Overlay = ({ gameState, score, onStart, onResume }) => (
+    <div className="absolute inset-0 bg-black/80 flex items-center justify-center flex-col gap-4 z-10 backdrop-blur-sm rounded-xl">
         <h2 className={`text-4xl font-bold font-serif ${gameState === 'GAMEOVER' ? 'text-red-500' : 'text-white'}`}>
-            {gameState === 'GAMEOVER' ? 'SYSTEM FAILURE' : gameState === 'WIN' ? 'MISSION COMPLETE' : 'INITIALIZE'}
+            {gameState === 'GAMEOVER' ? 'SYSTEM FAILURE' : gameState === 'WIN' ? 'MISSION COMPLETE' : gameState === 'PAUSED' ? 'SIMULATION PAUSED' : 'INITIALIZE'}
         </h2>
         {gameState !== 'INIT' && <p className="text-white text-xl font-mono">Score: {score}</p>}
-        <button onClick={onStart} className="px-8 py-3 bg-white text-black font-bold uppercase tracking-widest rounded hover:scale-105 transition-transform flex items-center gap-2">
-            <Play className="w-4 h-4" /> START
-        </button>
+
+        {gameState === 'PAUSED' ? (
+             <button onClick={onResume} className="px-8 py-3 bg-root-green text-black font-bold uppercase tracking-widest rounded hover:scale-105 transition-transform flex items-center gap-2">
+                <Play className="w-4 h-4" /> RESUME
+            </button>
+        ) : (
+            <button onClick={onStart} className="px-8 py-3 bg-white text-black font-bold uppercase tracking-widest rounded hover:scale-105 transition-transform flex items-center gap-2">
+                <Play className="w-4 h-4" /> START
+            </button>
+        )}
     </div>
 );
 
