@@ -97,7 +97,7 @@ const Arcade = () => {
                             <div className="p-4 border-b border-white/10 flex justify-between items-center bg-[#050505] shrink-0">
                                 <div>
                                     <h3 className="text-xl font-bold text-white font-serif flex items-center gap-3">
-                                        <span className="text-root-green">>></span> {activeGame.title}
+                                        <span className="text-root-green">{">>"}</span> {activeGame.title}
                                     </h3>
                                 </div>
                                 <button onClick={() => setActiveGame(null)} className="p-2 hover:text-white text-gray-500 hover:bg-white/10 rounded"><X /></button>
@@ -352,7 +352,7 @@ const GameEngine = ({ gameId, color }) => {
             window.removeEventListener('activeGameKey', handleDispatch);
         };
 
-    }, [gameId, gameState]);
+    }, [gameId, gameState, color]);
 
     // --- MEMORY ENGINE ---
     useEffect(() => {

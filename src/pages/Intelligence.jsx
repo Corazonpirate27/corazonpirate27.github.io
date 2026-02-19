@@ -312,7 +312,7 @@ const Intelligence = () => {
                             {PROVIDERS[activeProvider].icon} {PROVIDERS[activeProvider].name}
                         </span>
                         <span className="text-[10px] text-gray-600 font-mono hidden sm:inline">
-                            // {providerConfigs[activeProvider]?.model || PROVIDERS[activeProvider].defaultModel}
+                            {'//'} {providerConfigs[activeProvider]?.model || PROVIDERS[activeProvider].defaultModel}
                         </span>
                     </div>
                 </div>
