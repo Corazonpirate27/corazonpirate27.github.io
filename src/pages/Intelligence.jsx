@@ -75,12 +75,16 @@ const Intelligence = () => {
 
     // Load Config
     useEffect(() => {
-        const saved = localStorage.getItem('root_ai_config_v2');
+        const savedLocal = localStorage.getItem('root_ai_config_v2');
+        const savedSession = sessionStorage.getItem('root_ai_config_v2');
+        const saved = savedSession || savedLocal;
+
         if (saved) {
             const parsed = JSON.parse(saved);
             if (parsed.apiKeys) setApiKeys(parsed.apiKeys);
             if (parsed.activeProvider && PROVIDERS[parsed.activeProvider]) setActiveProvider(parsed.activeProvider);
             if (parsed.selectedVoiceURI) setSelectedVoiceURI(parsed.selectedVoiceURI);
+            if (parsed.storageMode) setStorageMode(parsed.storageMode);
 
             // Validate Models
             if (parsed.providerConfigs) {
@@ -224,8 +228,16 @@ const Intelligence = () => {
     };
 
     const saveConfig = () => {
-        const payload = { apiKeys, activeProvider, providerConfigs, selectedVoiceURI };
-        localStorage.setItem('root_ai_config_v2', JSON.stringify(payload));
+        const payload = { apiKeys, activeProvider, providerConfigs, selectedVoiceURI, storageMode };
+
+        if (storageMode === 'local') {
+            localStorage.setItem('root_ai_config_v2', JSON.stringify(payload));
+            sessionStorage.removeItem('root_ai_config_v2');
+        } else {
+            sessionStorage.setItem('root_ai_config_v2', JSON.stringify(payload));
+            localStorage.removeItem('root_ai_config_v2');
+        }
+
         setShowSettings(false);
         setMessages(prev => [...prev, { role: 'system', content: `System updated. Active Provider: ${PROVIDERS[activeProvider].name}` }]);
     };
