@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Send, Settings, User, Cpu, AlertTriangle, Save, RefreshCw, Key, Database, ChevronDown, Volume2, VolumeX, PlayCircle, StopCircle, Mic, Globe, Cloud } from 'lucide-react';
 import AIAvatar from '../components/AIAvatar';
+import { sanitizeInput } from '../utils/sanitize';
 
 const PROVIDERS = {
     groq: {
@@ -32,10 +33,6 @@ const PROVIDERS = {
         defaultModel: 'deepseek-chat',
         icon: '🐋'
     }
-};
-
-const sanitizeInput = (text) => {
-    return text.replace(/<[^>]*>?/gm, '');
 };
 
 const Intelligence = () => {
