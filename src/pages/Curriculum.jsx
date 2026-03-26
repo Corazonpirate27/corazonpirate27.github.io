@@ -114,9 +114,10 @@ const courses = [
             { level: 4, title: 'MDN Web Docs', url: 'https://developer.mozilla.org/en-US/', tag: 'Mozilla', type: 'Open Source' },
             { level: 5, title: 'JavaScript Algorithms', url: 'https://www.freecodecamp.org/learn/javascript-algorithms-and-data-structures/', tag: 'freeCodeCamp', type: 'Open Source' },
             { level: 6, title: 'Next.js App Router', url: 'https://nextjs.org/learn', tag: 'Next.js', type: 'Open Source' },
-            { level: 7, title: 'React Scrimba', url: 'https://scrimba.com/learn/learnreact', tag: 'Scrimba', type: 'Open Source' },
-            { level: 8, title: 'Performance Optimization', url: 'https://web.dev/learn/performance', tag: 'Google', type: 'Open Source' },
-            { level: 9, title: 'Patterns.dev', url: 'https://www.patterns.dev/', tag: 'Patterns', type: 'Open Source' },
+            { level: 7, title: 'Next.js Docs', url: 'https://nextjs.org/docs', tag: 'Next.js', type: 'Open Source' },
+            { level: 8, title: 'React Scrimba', url: 'https://scrimba.com/learn/learnreact', tag: 'Scrimba', type: 'Open Source' },
+            { level: 9, title: 'Performance Optimization', url: 'https://web.dev/learn/performance', tag: 'Google', type: 'Open Source' },
+            { level: 10, title: 'Patterns.dev', url: 'https://www.patterns.dev/', tag: 'Patterns', type: 'Open Source' },
             // Premium
             { level: 1, title: 'HTML/CSS/JS Basics', url: 'https://www.codecademy.com/catalog/subject/web-development', tag: 'Codecademy', type: 'Premium' },
             { level: 2, title: 'IBM Full Stack Dev', url: 'https://www.coursera.org/professional-certificates/ibm-full-stack-cloud-developer', tag: 'IBM', type: 'Premium' },
@@ -317,21 +318,33 @@ const courses = [
         icon: 'Gift',
         meta: { salary: 'Save $5000+', time: 'Instant Access', role: 'Resource Hacker' },
         links: [
-            { title: 'GitHub Student Pack', url: 'https://education.github.com/pack', tag: 'The Holy Grail' },
-            { title: 'UNiDAYS', url: 'https://www.myunidays.com/', tag: 'Global Discounts' },
-            { title: 'Student Beans', url: 'https://www.studentbeans.com/', tag: 'Tech & Fashion' },
-            { title: 'JetBrains License', url: 'https://www.jetbrains.com/community/education/#students', tag: 'Free Pro IDEs' },
-            { title: 'Azure for Students', url: 'https://azure.microsoft.com/en-us/free/students/', tag: '$100 Cloud Credit' },
-            { title: 'Amazon Prime Student', url: 'https://www.amazon.com/student', tag: '6 Months Free' },
-            { title: 'Notion for Education', url: 'https://www.notion.so/product/notion-for-education', tag: 'Second Brain' },
-            { title: 'Autodesk Education', url: 'https://www.autodesk.com/education/edu-software', tag: 'Free AutoCAD/Maya' },
-            { title: 'Figma Education', url: 'https://www.figma.com/education/', tag: 'Pro Design Tools' },
-            { title: 'Spotify Student', url: 'https://www.spotify.com/us/student/', tag: 'Music + Hulu' },
-            { title: 'Internet Archive', url: 'https://archive.org/', tag: 'Digital Library' },
-            { title: 'Canva for Students', url: 'https://www.canva.com/education/students/', tag: 'Design Suite' },
-            { title: 'Wolfram Alpha', url: 'https://www.wolframalpha.com/', tag: 'Computational Engine' },
-            { title: 'OpenStax Textbooks', url: 'https://openstax.org/', tag: 'Free Textbooks' },
-            { title: 'Project Gutenberg', url: 'https://www.gutenberg.org/', tag: 'Free eBooks' }
+            { title: 'GitHub Student Pack', url: 'https://education.github.com/pack', tag: 'The Holy Grail', type: 'Open Source' },
+            { title: 'UNiDAYS', url: 'https://www.myunidays.com/', tag: 'Global Discounts', type: 'Open Source' },
+            { title: 'Student Beans', url: 'https://www.studentbeans.com/', tag: 'Tech & Fashion', type: 'Open Source' },
+            { title: 'JetBrains License', url: 'https://www.jetbrains.com/community/education/#students', tag: 'Free Pro IDEs', type: 'Open Source' },
+            { title: 'Azure for Students', url: 'https://azure.microsoft.com/en-us/free/students/', tag: '$100 Cloud Credit', type: 'Open Source' },
+            { title: 'Amazon Prime Student', url: 'https://www.amazon.com/student', tag: '6 Months Free', type: 'Open Source' },
+            { title: 'Notion for Education', url: 'https://www.notion.so/product/notion-for-education', tag: 'Second Brain', type: 'Open Source' },
+            { title: 'Autodesk Education', url: 'https://www.autodesk.com/education/edu-software', tag: 'Free AutoCAD/Maya', type: 'Open Source' },
+            { title: 'Figma Education', url: 'https://www.figma.com/education/', tag: 'Pro Design Tools', type: 'Open Source' },
+            { title: 'Spotify Student', url: 'https://www.spotify.com/us/student/', tag: 'Music + Hulu', type: 'Open Source' },
+            { title: 'Internet Archive', url: 'https://archive.org/', tag: 'Digital Library', type: 'Open Source' },
+            { title: 'Canva for Students', url: 'https://www.canva.com/education/students/', tag: 'Design Suite', type: 'Open Source' },
+            { title: 'Wolfram Alpha', url: 'https://www.wolframalpha.com/', tag: 'Computational Engine', type: 'Open Source' },
+            { title: 'OpenStax Textbooks', url: 'https://openstax.org/', tag: 'Free Textbooks', type: 'Open Source' },
+            { title: 'Project Gutenberg', url: 'https://www.gutenberg.org/', tag: 'Free eBooks', type: 'Open Source' }
+        ]
+    },
+    {
+        id: 'ai_augmented', name: 'AI-Augmented Learning',
+        icon: 'Cpu',
+        meta: { salary: '$100k - $160k', time: '4 - 8 Months', role: 'AI User' },
+        links: [
+            // Open Source
+            { level: 1, title: 'Cursor Docs', url: 'https://docs.cursor.com/', tag: 'Cursor', type: 'Open Source' },
+            { level: 2, title: 'Prompt Engineering Guide', url: 'https://www.promptingguide.ai/', tag: 'Community', type: 'Open Source' },
+            // Premium
+            { level: 1, title: 'DeepLearning.AI AI for Everyone', url: 'https://www.coursera.org/learn/ai-for-everyone', tag: 'Andrew Ng', type: 'Premium' }
         ]
     }
 ];
@@ -408,22 +421,47 @@ const CourseCard = ({ course }) => {
                                 exit={{ height: 0, opacity: 0 }}
                                 className="overflow-hidden"
                             >
-                                <div className="pt-4 space-y-2 max-h-60 overflow-y-auto custom-scrollbar pr-2">
-                                    {course.links.map((link, i) => (
-                                        <a
-                                            key={i}
-                                            href={link.url}
-                                            target="_blank"
-                                            rel="noreferrer"
-                                            className="block p-3 rounded bg-white/5 hover:bg-white/10 border border-white/5 hover:border-root-green/30 transition-all group/link"
-                                        >
-                                            <div className="flex justify-between items-center">
-                                                <div className="text-xs font-bold text-gray-300 group-hover/link:text-white">{link.title}</div>
-                                                <ExternalLink className="w-3 h-3 text-gray-600" />
-                                            </div>
-                                            <div className="text-[10px] text-gray-600 mt-1">{link.tag}</div>
-                                        </a>
-                                    ))}
+                                <div className="pt-4 grid grid-cols-2 gap-4 max-h-60 overflow-y-auto custom-scrollbar pr-2">
+                                    {course.links.filter(l => l.type === 'Open Source' || !l.type).length > 0 && (
+                                        <div className="space-y-2">
+                                            <h4 className="text-xs font-bold text-[#00ff41] uppercase tracking-widest border-b border-[#00ff41]/30 pb-1 mb-2">Open Source Path</h4>
+                                            {course.links.filter(l => l.type === 'Open Source' || !l.type).map((link, i) => (
+                                                <a
+                                                    key={i}
+                                                    href={link.url}
+                                                    target="_blank"
+                                                    rel="noreferrer"
+                                                    className="block p-3 rounded bg-white/5 hover:bg-white/10 border border-white/5 hover:border-[#00ff41]/50 transition-all group/link"
+                                                >
+                                                    <div className="flex justify-between items-center">
+                                                        <div className="text-[10px] font-bold text-gray-300 group-hover/link:text-white line-clamp-1">{link.title}</div>
+                                                        <ExternalLink className="w-3 h-3 text-gray-600 shrink-0" />
+                                                    </div>
+                                                    <div className="text-[10px] text-gray-600 mt-1">{link.tag}</div>
+                                                </a>
+                                            ))}
+                                        </div>
+                                    )}
+                                    {course.links.filter(l => l.type === 'Premium').length > 0 && (
+                                        <div className="space-y-2">
+                                            <h4 className="text-xs font-bold text-purple-400 uppercase tracking-widest border-b border-purple-400/30 pb-1 mb-2">Premium / Audit Path</h4>
+                                            {course.links.filter(l => l.type === 'Premium').map((link, i) => (
+                                                <a
+                                                    key={i}
+                                                    href={link.url}
+                                                    target="_blank"
+                                                    rel="noreferrer"
+                                                    className="block p-3 rounded bg-white/5 hover:bg-white/10 border border-white/5 hover:border-purple-500/50 transition-all group/link"
+                                                >
+                                                    <div className="flex justify-between items-center">
+                                                        <div className="text-[10px] font-bold text-gray-300 group-hover/link:text-white line-clamp-1">{link.title}</div>
+                                                        <ExternalLink className="w-3 h-3 text-gray-600 shrink-0" />
+                                                    </div>
+                                                    <div className="text-[10px] text-gray-600 mt-1">{link.tag}</div>
+                                                </a>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
                             </motion.div>
                         )}
