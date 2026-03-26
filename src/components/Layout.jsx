@@ -61,6 +61,42 @@ const Layout = ({ children }) => {
         { name: 'Arcade', path: '/arcade', icon: Gamepad2 },
     ];
 
+    // Google Translate Initialization
+    useEffect(() => {
+        const addScript = document.createElement('script');
+        addScript.src = '//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit';
+        document.body.appendChild(addScript);
+        window.googleTranslateElementInit = () => {
+            // Desktop
+            new window.google.translate.TranslateElement({
+                pageLanguage: 'en',
+                includedLanguages: 'en,hi,zh-CN,ne,de,ru,fr', // English, Hindi, Mandarin, Nepali, German, Russian, French
+                layout: window.google.translate.TranslateElement.InlineLayout.SIMPLE,
+                autoDisplay: false
+            }, 'google_translate_element');
+        };
+    }, []);
+
+    // We only need one widget instance. Hide desktop widget when mobile menu opens, and move it via CSS or just rely on desktop instance for now.
+    // The google widget replaces the DOM node, so instantiating twice doesn't work easily without custom cloning.
+    // For simplicity, we'll let it render in the desktop nav, and let mobile users use native browser translation if the widget is hidden,
+    // OR we can dynamically move the node.
+
+    useEffect(() => {
+        const dtElement = document.getElementById('google_translate_element');
+        const mobElement = document.getElementById('google_translate_element_mobile');
+        if (isMobileMenuOpen && dtElement && mobElement) {
+             mobElement.appendChild(dtElement);
+             dtElement.classList.remove('hidden', 'lg:block');
+        } else if (!isMobileMenuOpen && dtElement) {
+             const desktopNav = document.getElementById('desktop_translate_container');
+             if(desktopNav) {
+                 desktopNav.appendChild(dtElement);
+                 dtElement.classList.add('hidden', 'lg:block');
+             }
+        }
+    }, [isMobileMenuOpen]);
+
     return (
         <div className="min-h-screen flex flex-col relative text-gray-200 font-sans selection:bg-root-green/30 selection:text-white">
             <MatrixBackground />
@@ -91,6 +127,11 @@ const Layout = ({ children }) => {
 
                     {/* Actions */}
                     <div className="flex items-center gap-3">
+                        {/* Translate Widget */}
+                        <div id="desktop_translate_container">
+                            <div id="google_translate_element" className="hidden lg:block overflow-hidden h-8" style={{minWidth: '120px'}}></div>
+                        </div>
+
                         {/* Download App */}
                         <a
                             href="https://github.com/Corazonpirate27/root.codex.2026"
@@ -161,6 +202,7 @@ const Layout = ({ children }) => {
                         ))}
 
                         <div className="flex flex-col gap-4 w-full px-12 mt-8">
+                            <div id="google_translate_element_mobile" className="flex justify-center mb-4"></div>
                             <a href="https://github.com/Corazonpirate27/root.codex.2026" className="flex items-center justify-center gap-2 px-6 py-4 rounded-lg bg-white/5 border border-white/10 text-gray-300 uppercase tracking-widest text-sm active:bg-root-green/20">
                                 <span>Download App</span>
                             </a>

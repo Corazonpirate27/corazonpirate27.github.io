@@ -175,21 +175,20 @@ const GameEngine = ({ gameId, color }) => {
         let frames = 0, pScore = 0, pLevel = 1;
 
         // ENTITY STATE
-        // Slower initial speeds
         let snake = [{ x: 15, y: 10 }], food = { x: 20, y: 10 }, dx = 0, dy = 0;
         let ball = { x: width / 2, y: height / 2, dx: 0, dy: 0, r: 6 }, p1 = { y: 160, h: 80 }, p2 = { y: 160, h: 80 };
         let paddle = { x: 250, w: 100 }, bricks = [];
         let invaders = [], bullets = [], pX = 280, invDir = 1;
-        let words = []; const wordList = ['ROOT', 'SUDO', 'VIM', 'NULL', 'BYTE', 'HASH', 'NODE', 'JAVA', 'REACT', 'VITE', 'CODE', 'DATA', 'LINK', 'Ping', 'Host'];
+        let words = []; const wordList = ['ROOT', 'SUDO', 'VIM', 'NULL', 'BYTE', 'HASH', 'NODE', 'JAVA', 'REACT', 'VITE', 'CODE', 'DATA', 'LINK', 'PING', 'HOST', 'CLOUD', 'AI', 'WEB3'];
 
         const initBricks = () => { bricks = []; for (let c = 0; c < 8; c++) for (let r = 0; r < 4; r++) bricks.push({ x: c * 70 + 20, y: r * 20 + 30, s: 1 }); };
-        const initInvaders = () => { invaders = []; for (let c = 0; c < 8; c++) for (let r = 0; r < 3; r++) invaders.push({ x: c * 50 + 50, y: r * 30 + 30, w: 20, h: 15, a: true }); };
+        const initInvaders = () => { invaders = []; for (let c = 0; c < 8; c++) for (let r = 0; r < 3 + pLevel; r++) invaders.push({ x: c * 50 + 50, y: r * 30 + 30, w: 20, h: 15, a: true }); };
 
         const reset = () => {
             pScore = 0; frames = 0; setScore(0); pLevel = 1; setLevel(1);
-            if (gameId === 'snake') { snake = [{ x: 15, y: 10 }]; dx = 1; dy = 0; }
-            if (gameId === 'pong') { ball = { x: 300, y: 200, dx: 3, dy: 3, r: 6 }; } // Slower Pong
-            if (gameId === 'breakout') { paddle = { x: 250, w: 100 }; ball = { x: 300, y: 350, dx: 3, dy: -3, r: 6 }; initBricks(); } // Slower Breakout
+            if (gameId === 'snake') { snake = [{ x: 15, y: 10 }]; dx = 1; dy = 0; food = { x: 20, y: 10 }; }
+            if (gameId === 'pong') { ball = { x: 300, y: 200, dx: 3, dy: 3, r: 6 }; p1.y = 160; p2.y = 160; }
+            if (gameId === 'breakout') { paddle = { x: 250, w: 100 }; ball = { x: 300, y: 350, dx: 3, dy: -3, r: 6 }; initBricks(); }
             if (gameId === 'invaders') { pX = 280; bullets = []; initInvaders(); }
             if (gameId === 'typer') { words = []; }
         };
@@ -202,19 +201,24 @@ const GameEngine = ({ gameId, color }) => {
 
             // === SNAKE ===
             if (gameId === 'snake') {
-                // Slower Snake: Move every 8 frames initially, gets faster
-                const speed = Math.max(2, 10 - pLevel);
+                const speed = Math.max(3, 12 - pLevel);
                 if (frames % speed === 0) {
                     const head = { x: snake[0].x + dx, y: snake[0].y + dy };
-                    // Wall Wrap or Death? Let's do Death for 'Pit'
-                    if (head.x < 0 || head.x >= 30 || head.y < 0 || head.y >= 20 || snake.some(s => s.x === head.x && s.y === head.y)) { setGameState('GAMEOVER'); return; }
+                    if (head.x < 0 || head.x >= 30 || head.y < 0 || head.y >= 20 || snake.some(s => s.x === head.x && s.y === head.y)) {
+                        setGameState('GAMEOVER'); return;
+                    }
                     snake.unshift(head);
                     if (head.x === food.x && head.y === food.y) {
-                        pScore += 10; setScore(pScore);
-                        if (pScore % 50 === 0) { pLevel++; setLevel(pLevel); } // Level up every 50 pts
-                        food = { x: Math.floor(Math.random() * 30), y: Math.floor(Math.random() * 20) };
+                        pScore += 10 * pLevel; setScore(pScore);
+                        if (pScore % 100 === 0) { pLevel++; setLevel(pLevel); }
+                        let newFood;
+                        do {
+                            newFood = { x: Math.floor(Math.random() * 30), y: Math.floor(Math.random() * 20) };
+                        } while (snake.some(s => s.x === newFood.x && s.y === newFood.y));
+                        food = newFood;
+                    } else {
+                        snake.pop();
                     }
-                    else snake.pop();
                 }
                 ctx.fillStyle = '#22c55e'; snake.forEach(s => ctx.fillRect(s.x * 20, s.y * 20, 18, 18));
                 ctx.fillStyle = 'red'; ctx.fillRect(food.x * 20, food.y * 20, 18, 18);
@@ -225,17 +229,27 @@ const GameEngine = ({ gameId, color }) => {
                 ball.x += ball.dx; ball.y += ball.dy;
                 if (ball.y < 0 || ball.y > height) ball.dy = -ball.dy;
                 // Paddles
-                if (ball.x < 20 && ball.y > p1.y && ball.y < p1.y + p1.h) ball.dx = Math.abs(ball.dx);
-                if (ball.x > width - 20 && ball.y > p2.y && ball.y < p2.y + p2.h) ball.dx = -Math.abs(ball.dx);
+                if (ball.x < 20 && ball.y > p1.y && ball.y < p1.y + p1.h) {
+                    ball.dx = Math.abs(ball.dx) + 0.5;
+                    ball.dy += (ball.y - (p1.y + p1.h/2)) * 0.1;
+                }
+                if (ball.x > width - 20 && ball.y > p2.y && ball.y < p2.y + p2.h) {
+                    ball.dx = -(Math.abs(ball.dx) + 0.5);
+                    ball.dy += (ball.y - (p2.y + p2.h/2)) * 0.1;
+                }
                 // Score
-                if (ball.x < 0 || ball.x > width) { setGameState('GAMEOVER'); return; }
+                if (ball.x < 0) { setGameState('GAMEOVER'); return; }
+                if (ball.x > width) {
+                    pScore += 100; setScore(pScore); pLevel++; setLevel(pLevel);
+                    ball = { x: 300, y: 200, dx: 3 + pLevel, dy: 3 + pLevel, r: 6 };
+                }
                 // AI
                 const targetY = ball.y - p2.h / 2;
-                p2.y += (targetY - p2.y) * (0.05 + (pLevel * 0.01)); // AI gets smarter with level
+                p2.y += (targetY - p2.y) * (0.05 + (pLevel * 0.02));
+                p2.y = Math.max(0, Math.min(height - p2.h, p2.y));
 
                 ctx.fillStyle = 'white'; ctx.beginPath(); ctx.arc(ball.x, ball.y, 6, 0, Math.PI * 2); ctx.fill();
                 ctx.fillRect(10, p1.y, 10, p1.h); ctx.fillRect(width - 20, p2.y, 10, p2.h);
-                if (frames % 200 === 0) { pScore += 10; setScore(pScore); pLevel = Math.min(10, Math.floor(pScore / 50) + 1); setLevel(pLevel); }
             }
 
             // === BREAKOUT ===
@@ -244,20 +258,27 @@ const GameEngine = ({ gameId, color }) => {
                 if (ball.x < 0 || ball.x > width) ball.dx = -ball.dx;
                 if (ball.y < 0) ball.dy = -ball.dy;
                 if (ball.y > height) { setGameState('GAMEOVER'); return; }
-                if (ball.y > 375 && ball.x > paddle.x && ball.x < paddle.x + paddle.w) ball.dy = -Math.abs(ball.dy);
+                if (ball.y > 375 && ball.x > paddle.x && ball.x < paddle.x + paddle.w) {
+                    ball.dy = -Math.abs(ball.dy);
+                    ball.dx += (ball.x - (paddle.x + paddle.w/2)) * 0.1;
+                }
 
                 bricks.forEach(b => {
                     if (b.s) {
                         if (ball.x > b.x && ball.x < b.x + 60 && ball.y > b.y && ball.y < b.y + 20) {
-                            ball.dy = -ball.dy; b.s = 0; pScore += 10; setScore(pScore);
-                            if (pScore % 80 === 0) { // Clear screen level up
-                                pLevel++; setLevel(pLevel);
-                                ball.dx *= 1.1; ball.dy *= 1.1; // Speed up
-                                initBricks();
-                            }
+                            ball.dy = -ball.dy; b.s = 0; pScore += 10 * pLevel; setScore(pScore);
                         }
-                        ctx.fillStyle = color.split('-')[1]; ctx.fillRect(b.x, b.y, 60, 15);
                     }
+                });
+
+                if (bricks.every(b => !b.s)) {
+                    pLevel++; setLevel(pLevel);
+                    ball = { x: 300, y: 350, dx: 3 + pLevel * 0.5, dy: -(3 + pLevel * 0.5), r: 6 };
+                    initBricks();
+                }
+
+                bricks.forEach(b => {
+                    if (b.s) { ctx.fillStyle = '#ef4444'; ctx.fillRect(b.x, b.y, 60, 15); }
                 });
                 ctx.fillStyle = 'white'; ctx.beginPath(); ctx.arc(ball.x, ball.y, 6, 0, Math.PI * 2); ctx.fill();
                 ctx.fillStyle = '#3b82f6'; ctx.fillRect(paddle.x, 380, paddle.w, 10);
@@ -266,12 +287,11 @@ const GameEngine = ({ gameId, color }) => {
             // === INVADERS ===
             if (gameId === 'invaders') {
                 ctx.fillStyle = '#00ff41'; ctx.fillRect(pX, 380, 30, 20);
-                bullets.forEach((b, i) => { b.y -= 8; ctx.fillStyle = 'white'; ctx.fillRect(b.x, b.y, 2, 8); if (b.y < 0) bullets.splice(i, 1); });
+                bullets.forEach((b, i) => { b.y -= 10; ctx.fillStyle = 'white'; ctx.fillRect(b.x, b.y, 4, 10); if (b.y < 0) bullets.splice(i, 1); });
 
-                // Move invaders slower: every 60 frames -> 50 -> 40 based on level
-                const moveRate = Math.max(20, 70 - (pLevel * 5));
+                const moveRate = Math.max(10, 60 - (pLevel * 8));
                 if (frames % moveRate === 0) {
-                    let edge = false; invaders.forEach(t => { if (t.a) { t.x += 10 * invDir; if (t.x > width - 30 || t.x < 10) edge = true; } });
+                    let edge = false; invaders.forEach(t => { if (t.a) { t.x += 15 * invDir; if (t.x > width - 30 || t.x < 10) edge = true; } });
                     if (edge) { invDir *= -1; invaders.forEach(t => t.y += 20); }
                 }
 
@@ -281,23 +301,23 @@ const GameEngine = ({ gameId, color }) => {
                         if (t.y > 350) setGameState('GAMEOVER');
                         bullets.forEach((b, bi) => {
                             if (b.x > t.x && b.x < t.x + 20 && b.y > t.y && b.y < t.y + 15) {
-                                t.a = false; bullets.splice(bi, 1); pScore += 20; setScore(pScore);
-                                if (invaders.every(i => !i.a)) { pLevel++; setLevel(pLevel); initInvaders(); }
+                                t.a = false; bullets.splice(bi, 1); pScore += 20 * pLevel; setScore(pScore);
                             }
                         });
                     }
                 });
+
+                if (invaders.every(i => !i.a)) { pLevel++; setLevel(pLevel); initInvaders(); }
             }
 
             // === TYPER ===
             if (gameId === 'typer') {
-                // Slower spawn: 100 frames initially
-                const spawnRate = Math.max(30, 100 - (pLevel * 5));
-                if (frames % spawnRate === 0) words.push({ t: wordList[Math.floor(Math.random() * wordList.length)], x: Math.random() * (width - 100), y: 0 });
+                const spawnRate = Math.max(20, 120 - (pLevel * 10));
+                if (frames % spawnRate === 0) words.push({ t: wordList[Math.floor(Math.random() * wordList.length)], x: Math.random() * (width - 100) + 10, y: 0 });
 
-                words.forEach(w => {
-                    w.y += (0.5 + (pLevel * 0.1)); // Fall speed increases
-                    ctx.fillStyle = '#06b6d4'; ctx.font = '20px monospace'; ctx.fillText(w.t, w.x, w.y);
+                words.forEach((w, i) => {
+                    w.y += (0.8 + (pLevel * 0.2));
+                    ctx.fillStyle = '#06b6d4'; ctx.font = '24px monospace'; ctx.fillText(w.t, w.x, w.y);
                     if (w.y > height) setGameState('GAMEOVER');
                 });
             }
@@ -308,7 +328,6 @@ const GameEngine = ({ gameId, color }) => {
         if (gameState === 'PLAYING') { reset(); render(); }
 
         const handleKey = (e) => {
-            // Prevent scrolling
             if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Space"].indexOf(e.code) > -1) {
                 e.preventDefault();
             }
@@ -320,22 +339,32 @@ const GameEngine = ({ gameId, color }) => {
                 if (e.code === 'ArrowRight' && dx !== -1) { dx = 1; dy = 0; }
             }
             if (gameId === 'pong') {
-                if (e.code === 'ArrowUp') p1.y = Math.max(0, p1.y - 30);
-                if (e.code === 'ArrowDown') p1.y = Math.min(height - 80, p1.y + 30);
+                if (e.code === 'ArrowUp') p1.y = Math.max(0, p1.y - 40);
+                if (e.code === 'ArrowDown') p1.y = Math.min(height - 80, p1.y + 40);
             }
             if (gameId === 'breakout' || gameId === 'invaders') {
-                if (e.code === 'ArrowLeft') { if (gameId === 'breakout') paddle.x -= 30; else pX -= 20; }
-                if (e.code === 'ArrowRight') { if (gameId === 'breakout') paddle.x += 30; else pX += 20; }
+                if (e.code === 'ArrowLeft') { if (gameId === 'breakout') paddle.x = Math.max(0, paddle.x - 40); else pX = Math.max(0, pX - 30); }
+                if (e.code === 'ArrowRight') { if (gameId === 'breakout') paddle.x = Math.min(width - paddle.w, paddle.x + 40); else pX = Math.min(width - 30, pX + 30); }
             }
             if (gameId === 'invaders' && e.code === 'Space') {
-                bullets.push({ x: pX + 14, y: 380 });
+                if (bullets.length < 3) bullets.push({ x: pX + 13, y: 380 });
             }
             if (gameId === 'typer') {
                 const k = e.key.toUpperCase();
-                const idx = words.findIndex(w => w.t.startsWith(k));
-                if (idx !== -1) {
-                    words[idx].t = words[idx].t.substring(1);
-                    if (!words[idx].t) { words.splice(idx, 1); pScore += 10; setScore(pScore); }
+                let activeWordIdx = words.findIndex(w => w.active);
+
+                if (activeWordIdx === -1) {
+                    activeWordIdx = words.findIndex(w => w.t.startsWith(k));
+                    if (activeWordIdx !== -1) words[activeWordIdx].active = true;
+                }
+
+                if (activeWordIdx !== -1 && words[activeWordIdx].t.startsWith(k)) {
+                    words[activeWordIdx].t = words[activeWordIdx].t.substring(1);
+                    if (!words[activeWordIdx].t) {
+                        words.splice(activeWordIdx, 1);
+                        pScore += 10 * pLevel; setScore(pScore);
+                        if (pScore % 150 === 0) { pLevel++; setLevel(pLevel); }
+                    }
                 }
             }
         };
@@ -357,10 +386,14 @@ const GameEngine = ({ gameId, color }) => {
     // --- MEMORY ENGINE ---
     useEffect(() => {
         if (gameId !== 'memory' || gameState !== 'PLAYING') return;
-        const icons = ['⚡', '💀', '💻', '💾', '📡', '🕹️', '🛡️', '👾'];
-        const deck = [...icons, ...icons].sort(() => Math.random() - 0.5).map((poly, i) => ({ id: i, icon: poly, flipped: false, solved: false }));
-        setMemoryCards(deck); setScore(0);
-    }, [gameId, gameState]);
+        const baseIcons = ['⚡', '💀', '💻', '💾', '📡', '🕹️', '🛡️', '👾', '🌐', '🔋', '🚀', '🔑'];
+        // Level dictates grid size: Lvl 1 (4x4 = 8 pairs), Lvl 2 (4x5 = 10 pairs), Lvl 3 (4x6 = 12 pairs)
+        const numPairs = Math.min(8 + (level - 1) * 2, 12);
+        const iconsToUse = baseIcons.slice(0, numPairs);
+        const deck = [...iconsToUse, ...iconsToUse].sort(() => Math.random() - 0.5).map((poly, i) => ({ id: i, icon: poly, flipped: false, solved: false }));
+        setMemoryCards(deck);
+        if (level === 1) setScore(0);
+    }, [gameId, gameState, level]);
 
     const handleCardClick = (id) => {
         if (gameState !== 'PLAYING') return;
@@ -373,8 +406,10 @@ const GameEngine = ({ gameId, color }) => {
         const active = newD.filter(c => c.flipped && !c.solved);
         if (active.length === 2) {
             if (active[0].icon === active[1].icon) {
-                active.forEach(c => c.solved = true); setScore(s => s + 20);
-                if (newD.every(c => c.solved)) setGameState('WIN');
+                active.forEach(c => c.solved = true); setScore(s => s + 20 * level);
+                if (newD.every(c => c.solved)) {
+                    setTimeout(() => setLevel(l => l + 1), 1000); // Next Level
+                }
             } else {
                 setTimeout(() => {
                     active.forEach(c => c.flipped = false);
@@ -390,12 +425,18 @@ const GameEngine = ({ gameId, color }) => {
     };
 
     if (gameId === 'memory') {
+        // Dynamic columns based on deck size
+        const cols = memoryCards.length > 20 ? 'grid-cols-6' : memoryCards.length > 16 ? 'grid-cols-5' : 'grid-cols-4';
         return (
-            <div className="w-full h-full flex flex-col items-center justify-center bg-black p-4">
+            <div className="w-full h-full flex flex-col items-center justify-center bg-black p-4 relative">
+                <div className="absolute top-4 right-4 text-white font-mono z-10 flex gap-4">
+                    <span>Level: {level}</span>
+                    <span>Score: {score}</span>
+                </div>
                 {gameState === 'PLAYING' ? (
-                    <div className="grid grid-cols-4 gap-4">
+                    <div className={`grid ${cols} gap-2 md:gap-4`}>
                         {memoryCards.map(c => (
-                            <button key={c.id} onClick={() => handleCardClick(c.id)} className={`w-16 h-16 rounded text-3xl flex items-center justify-center transition-all ${c.flipped || c.solved ? 'bg-purple-900 rotate-y-180' : 'bg-gray-800'}`}>
+                            <button key={c.id} onClick={() => handleCardClick(c.id)} className={`w-12 h-12 md:w-16 md:h-16 rounded text-2xl md:text-3xl flex items-center justify-center transition-all ${c.flipped || c.solved ? 'bg-purple-900 rotate-y-180' : 'bg-gray-800'}`}>
                                 {(c.flipped || c.solved) ? c.icon : '?'}
                             </button>
                         ))}
@@ -425,7 +466,7 @@ const Overlay = ({ gameState, score, onStart }) => (
             {gameState === 'GAMEOVER' ? 'SYSTEM FAILURE' : gameState === 'WIN' ? 'MISSION COMPLETE' : 'INITIALIZE'}
         </h2>
         {gameState !== 'INIT' && <p className="text-white text-xl font-mono">Score: {score}</p>}
-        <button onClick={onStart} className="px-8 py-3 bg-white text-black font-bold uppercase tracking-widest rounded hover:scale-105 transition-transform flex items-center gap-2">
+        <button onClick={onStart} className="px-8 py-3 bg-white text-black font-bold uppercase tracking-widest rounded hover:scale-105 transition-transform flex items-center gap-2 mt-4 shadow-[0_0_15px_rgba(255,255,255,0.3)]">
             <Play className="w-4 h-4" /> START
         </button>
     </div>
