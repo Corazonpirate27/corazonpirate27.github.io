@@ -8,6 +8,8 @@ const courses = [
         icon: 'Shield',
         meta: { salary: '$95k - $160k', time: '8 - 12 Months', role: 'Security Engineer' },
         links: [
+            // Roadmap
+            { level: 0, title: 'Cybersecurity Roadmap', url: 'https://roadmap.sh/cyber-security', tag: 'roadmap.sh', type: 'Roadmap' },
             // Open Source
             { level: 1, title: 'Intro to Cyber Security', url: 'https://www.open.edu/openlearn/science-maths-technology/introduction-cyber-security-stay-safe-online/content-section-0?active-tab=description-tab', tag: 'OpenLearn', type: 'Open Source' },
             { level: 2, title: 'Linux Journey', url: 'https://linuxjourney.com/', tag: 'Linux Journey', type: 'Open Source' },
@@ -34,6 +36,8 @@ const courses = [
         icon: 'Database',
         meta: { salary: '$85k - $145k', time: '6 - 12 Months', role: 'Data Scientist' },
         links: [
+            // Roadmap
+            { level: 0, title: 'Data Analyst Roadmap', url: 'https://roadmap.sh/data-analyst', tag: 'roadmap.sh', type: 'Roadmap' },
             // Open Source
             { level: 1, title: 'Stats & Probability', url: 'https://www.khanacademy.org/math/statistics-probability', tag: 'Khan Academy', type: 'Open Source' },
             { level: 2, title: 'Kaggle Learn', url: 'https://www.kaggle.com/learn', tag: 'Kaggle', type: 'Open Source' },
@@ -58,6 +62,8 @@ const courses = [
         icon: 'Cpu',
         meta: { salary: '$120k - $200k', time: '12 - 18 Months', role: 'AI Engineer' },
         links: [
+            // Roadmap
+            { level: 0, title: 'AI Engineer Roadmap', url: 'https://roadmap.sh/ai-data-scientist', tag: 'roadmap.sh', type: 'Roadmap' },
             // Open Source
             { level: 1, title: 'Elements of AI', url: 'https://www.elementsofai.com/', tag: 'U of Helsinki', type: 'Open Source' },
             { level: 2, title: 'Fast.ai (Practical DL)', url: 'https://course.fast.ai/', tag: 'Fast.ai', type: 'Open Source' },
@@ -84,6 +90,8 @@ const courses = [
         icon: 'Wifi',
         meta: { salary: '$90k - $150k', time: '8 - 12 Months', role: 'Embedded Engineer' },
         links: [
+            // Roadmap
+            { level: 0, title: 'Computer Science Roadmap', url: 'https://roadmap.sh/computer-science', tag: 'roadmap.sh', type: 'Roadmap' },
             // Open Source
             { level: 1, title: 'Arduino Guides', url: 'https://docs.arduino.cc/', tag: 'Arduino', type: 'Open Source' },
             { level: 2, title: 'Electrical Engineering', url: 'https://www.khanacademy.org/science/electrical-engineering', tag: 'Khan Academy', type: 'Open Source' },
@@ -107,6 +115,8 @@ const courses = [
         icon: 'Layers',
         meta: { salary: '$85k - $150k', time: '6 - 9 Months', role: 'Software Engineer' },
         links: [
+            // Roadmap
+            { level: 0, title: 'Full Stack Roadmap', url: 'https://roadmap.sh/full-stack', tag: 'roadmap.sh', type: 'Roadmap' },
             // Open Source
             { level: 1, title: 'The Odin Project', url: 'https://www.theodinproject.com/', tag: 'The Best', type: 'Open Source' },
             { level: 2, title: 'Responsive Web Design', url: 'https://www.freecodecamp.org/learn/2022/responsive-web-design/', tag: 'freeCodeCamp', type: 'Open Source' },
@@ -132,15 +142,16 @@ const courses = [
         icon: 'Server',
         meta: { salary: '$110k - $170k', time: '9 - 14 Months', role: 'DevOps Engineer' },
         links: [
+            // Roadmap
+            { level: 0, title: 'DevOps Roadmap', url: 'https://roadmap.sh/devops', tag: 'roadmap.sh', type: 'Roadmap' },
             // Open Source
-            { level: 1, title: 'DevOps Roadmap', url: 'https://roadmap.sh/devops', tag: 'roadmap.sh', type: 'Open Source' },
-            { level: 2, title: 'The Twelve-Factor App', url: 'https://12factor.net/', tag: 'Methodology', type: 'Open Source' },
-            { level: 3, title: 'Linux Command Line', url: 'https://ubuntu.com/tutorials/command-line-for-beginners', tag: 'Ubuntu', type: 'Open Source' },
-            { level: 4, title: 'Docker for Beginners', url: 'https://github.com/docker/labs/tree/master/beginner', tag: 'Docker', type: 'Open Source' },
-            { level: 5, title: 'Kubernetes Basics', url: 'https://kubernetes.io/docs/tutorials/kubernetes-basics/', tag: 'K8s Docs', type: 'Open Source' },
-            { level: 6, title: 'Prometheus Monitoring', url: 'https://prometheus.io/docs/introduction/overview/', tag: 'Prometheus', type: 'Open Source' },
-            { level: 7, title: 'Platform Engineering', url: 'https://platformengineering.org/', tag: 'Platform Eng', type: 'Open Source' },
-            { level: 8, title: 'Terraform Tutorials', url: 'https://developer.hashicorp.com/terraform/tutorials', tag: 'HashiCorp', type: 'Open Source' },
+            { level: 1, title: 'The Twelve-Factor App', url: 'https://12factor.net/', tag: 'Methodology', type: 'Open Source' },
+            { level: 2, title: 'Linux Command Line', url: 'https://ubuntu.com/tutorials/command-line-for-beginners', tag: 'Ubuntu', type: 'Open Source' },
+            { level: 3, title: 'Docker for Beginners', url: 'https://github.com/docker/labs/tree/master/beginner', tag: 'Docker', type: 'Open Source' },
+            { level: 4, title: 'Kubernetes Basics', url: 'https://kubernetes.io/docs/tutorials/kubernetes-basics/', tag: 'K8s Docs', type: 'Open Source' },
+            { level: 5, title: 'Prometheus Monitoring', url: 'https://prometheus.io/docs/introduction/overview/', tag: 'Prometheus', type: 'Open Source' },
+            { level: 6, title: 'Platform Engineering', url: 'https://platformengineering.org/', tag: 'Platform Eng', type: 'Open Source' },
+            { level: 7, title: 'Terraform Tutorials', url: 'https://developer.hashicorp.com/terraform/tutorials', tag: 'HashiCorp', type: 'Open Source' },
             // Premium
             { level: 1, title: 'DevOps Fundamentals', url: 'https://www.coursera.org/learn/intro-to-devops', tag: 'IBM', type: 'Premium' },
             { level: 2, title: 'Bash Scripting', url: 'https://www.codecademy.com/learn/learn-bash-scripting', tag: 'Codecademy', type: 'Premium' },
@@ -156,6 +167,8 @@ const courses = [
         icon: 'Cloud',
         meta: { salary: '$115k - $180k', time: '8 - 12 Months', role: 'Cloud Architect' },
         links: [
+            // Roadmap
+            { level: 0, title: 'Cloud Engineer Roadmap', url: 'https://roadmap.sh/cloud-computing', tag: 'roadmap.sh', type: 'Roadmap' },
             // Open Source
             { level: 1, title: 'Cloud Computing Concepts', url: 'https://www.khanacademy.org/computing/computer-science/internet-intro', tag: 'Khan Academy', type: 'Open Source' },
             { level: 2, title: 'AWS Skill Builder (Free)', url: 'https://explore.skillbuilder.aws/learn', tag: 'AWS', type: 'Open Source' },
@@ -178,6 +191,8 @@ const courses = [
         icon: 'GitBranch',
         meta: { salary: '$100k - $160k', time: '6 - 12 Months', role: 'OS Maintainer' },
         links: [
+            // Roadmap
+            { level: 0, title: 'Open Source Roadmap', url: 'https://roadmap.sh/', tag: 'roadmap.sh', type: 'Roadmap' },
             // Open Source
             { level: 1, title: 'Open Source Guide', url: 'https://opensource.guide/', tag: 'GitHub', type: 'Open Source' },
             { level: 2, title: 'How to Contribute', url: 'https://www.freecodecamp.org/news/how-to-contribute-to-open-source-projects-beginners-guide/', tag: 'freeCodeCamp', type: 'Open Source' },
@@ -198,6 +213,8 @@ const courses = [
         icon: 'Binary',
         meta: { salary: '$90k - $150k', time: '12 - 24 Months', role: 'Software Engineer' },
         links: [
+            // Roadmap
+            { level: 0, title: 'Computer Science Roadmap', url: 'https://roadmap.sh/computer-science', tag: 'roadmap.sh', type: 'Roadmap' },
             // Open Source
             { level: 1, title: 'CS Algorithms & Data', url: 'https://www.freecodecamp.org/learn/javascript-algorithms-and-data-structures/', tag: 'freeCodeCamp', type: 'Open Source' },
             { level: 2, title: 'Teach Yourself CS', url: 'https://teachyourselfcs.com/', tag: 'Guide', type: 'Open Source' },
@@ -220,6 +237,9 @@ const courses = [
         icon: 'Smartphone',
         meta: { salary: '$90k - $145k', time: '6 - 9 Months', role: 'iOS/Android Dev' },
         links: [
+            // Roadmap
+            { level: 0, title: 'Android Developer Roadmap', url: 'https://roadmap.sh/android', tag: 'roadmap.sh', type: 'Roadmap' },
+            { level: 0, title: 'iOS Developer Roadmap', url: 'https://roadmap.sh/ios', tag: 'roadmap.sh', type: 'Roadmap' },
             // Open Source
             { level: 1, title: 'App Dev Training', url: 'https://developer.apple.com/tutorials/app-dev-training', tag: 'Apple', type: 'Open Source' },
             { level: 2, title: 'Android Basics Compose', url: 'https://developer.android.com/courses/android-basics-compose/course', tag: 'Google', type: 'Open Source' },
@@ -241,6 +261,8 @@ const courses = [
         icon: 'Blocks',
         meta: { salary: '$100k - $180k', time: '6 - 12 Months', role: 'Smart Contract Dev' },
         links: [
+            // Roadmap
+            { level: 0, title: 'Blockchain Developer Roadmap', url: 'https://roadmap.sh/blockchain', tag: 'roadmap.sh', type: 'Roadmap' },
             // Open Source
             { level: 1, title: 'Ethereum.org', url: 'https://ethereum.org/en/learn/', tag: 'Ethereum', type: 'Open Source' },
             { level: 2, title: 'Solidity by Example', url: 'https://solidity-by-example.org/', tag: 'Solidity', type: 'Open Source' },
@@ -263,6 +285,8 @@ const courses = [
         icon: 'Gamepad',
         meta: { salary: '$80k - $140k', time: '12 - 24 Months', role: 'Game Developer' },
         links: [
+            // Roadmap
+            { level: 0, title: 'Game Developer Roadmap', url: 'https://roadmap.sh/game-developer', tag: 'roadmap.sh', type: 'Roadmap' },
             // Open Source
             { level: 1, title: 'Godot Docs', url: 'https://docs.godotengine.org/en/stable/', tag: 'Godot Engine', type: 'Open Source' },
             { level: 2, title: 'Unity Learn', url: 'https://learn.unity.com/', tag: 'Unity', type: 'Open Source' },
@@ -283,6 +307,8 @@ const courses = [
         icon: 'ServerCrash',
         meta: { salary: '$75k - $120k', time: '6 - 12 Months', role: 'SysAdmin' },
         links: [
+            // Roadmap
+            { level: 0, title: 'Linux/SysAdmin Roadmap', url: 'https://roadmap.sh/linux', tag: 'roadmap.sh', type: 'Roadmap' },
             // Open Source
             { level: 1, title: 'Linux Fundamentals', url: 'https://training.linuxfoundation.org/training/introduction-to-linux/', tag: 'Linux Fdn', type: 'Open Source' },
             { level: 2, title: 'PowerShell Docs', url: 'https://learn.microsoft.com/en-us/powershell/', tag: 'Microsoft', type: 'Open Source' },
@@ -301,6 +327,8 @@ const courses = [
         icon: 'Bug',
         meta: { salary: '$70k - $115k', time: '4 - 8 Months', role: 'QA Engineer' },
         links: [
+            // Roadmap
+            { level: 0, title: 'QA Roadmap', url: 'https://roadmap.sh/qa', tag: 'roadmap.sh', type: 'Roadmap' },
             // Open Source
             { level: 1, title: 'Selenium Docs', url: 'https://www.selenium.dev/documentation/', tag: 'Selenium', type: 'Open Source' },
             { level: 2, title: 'Playwright', url: 'https://playwright.dev/', tag: 'Microsoft', type: 'Open Source' },
@@ -340,6 +368,8 @@ const courses = [
         icon: 'Cpu',
         meta: { salary: '$100k - $160k', time: '4 - 8 Months', role: 'AI User' },
         links: [
+            // Roadmap
+            { level: 0, title: 'Prompt Engineer Roadmap', url: 'https://roadmap.sh/prompt-engineering', tag: 'roadmap.sh', type: 'Roadmap' },
             // Open Source
             { level: 1, title: 'Cursor Docs', url: 'https://docs.cursor.com/', tag: 'Cursor', type: 'Open Source' },
             { level: 2, title: 'Prompt Engineering Guide', url: 'https://www.promptingguide.ai/', tag: 'Community', type: 'Open Source' },
@@ -422,9 +452,24 @@ const CourseCard = ({ course }) => {
                                 className="overflow-hidden"
                             >
                                 <div className="pt-4 grid grid-cols-2 gap-4 max-h-60 overflow-y-auto custom-scrollbar pr-2">
-                                    {course.links.filter(l => l.type === 'Open Source' || !l.type).length > 0 && (
+                                    {course.links.filter(l => l.type === 'Open Source' || l.type === 'Roadmap' || !l.type).length > 0 && (
                                         <div className="space-y-2">
                                             <h4 className="text-xs font-bold text-[#00ff41] uppercase tracking-widest border-b border-[#00ff41]/30 pb-1 mb-2">Open Source Path</h4>
+                                            {course.links.filter(l => l.type === 'Roadmap').map((link, i) => (
+                                                <a
+                                                    key={`roadmap-${i}`}
+                                                    href={link.url}
+                                                    target="_blank"
+                                                    rel="noreferrer"
+                                                    className="block p-3 rounded bg-[#00ff41]/10 hover:bg-[#00ff41]/20 border border-[#00ff41]/30 hover:border-[#00ff41] transition-all group/link mb-2"
+                                                >
+                                                    <div className="flex justify-between items-center">
+                                                        <div className="text-[10px] font-bold text-[#00ff41] group-hover/link:text-white line-clamp-1">{link.title}</div>
+                                                        <ExternalLink className="w-3 h-3 text-[#00ff41] shrink-0" />
+                                                    </div>
+                                                    <div className="text-[10px] text-[#00ff41]/70 mt-1">{link.tag}</div>
+                                                </a>
+                                            ))}
                                             {course.links.filter(l => l.type === 'Open Source' || !l.type).map((link, i) => (
                                                 <a
                                                     key={i}

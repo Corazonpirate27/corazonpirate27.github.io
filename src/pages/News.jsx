@@ -6,21 +6,42 @@ const News = () => {
     const [stories, setStories] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    const fetchNews = async () => {
+    const CACHE_KEY = 'root_academy_news_cache';
+    const CACHE_TIME = 5 * 60 * 1000; // 5 minutes
+
+    const fetchNews = async (forceRefresh = false) => {
         setLoading(true);
         try {
+            if (!forceRefresh) {
+                const cached = sessionStorage.getItem(CACHE_KEY);
+                if (cached) {
+                    const { data, timestamp } = JSON.parse(cached);
+                    if (Date.now() - timestamp < CACHE_TIME) {
+                        setStories(data);
+                        setLoading(false);
+                        return;
+                    }
+                }
+            }
+
             // Hacker News Top Stories
-            const idsRes = await fetch('https://hacker-news.firebaseio.com/v0/topstories.json?print=pretty');
+            const idsRes = await fetch('https://hacker-news.firebaseio.com/v0/topstories.json');
             const ids = await idsRes.json();
             const top30 = ids.slice(0, 30);
 
             const storyPromises = top30.map(id =>
-                fetch(`https://hacker-news.firebaseio.com/v0/item/${id}.json?print=pretty`).then(r => r.json())
+                fetch(`https://hacker-news.firebaseio.com/v0/item/${id}.json`).then(r => r.json())
             );
 
             const results = await Promise.all(storyPromises);
             // Filter: Must have URL and Score > 50 (Verified Interest)
-            setStories(results.filter(s => s && s.url && s.score > 50));
+            const validStories = results.filter(s => s && s.url && s.score > 50);
+
+            setStories(validStories);
+            sessionStorage.setItem(CACHE_KEY, JSON.stringify({
+                data: validStories,
+                timestamp: Date.now()
+            }));
         } catch (error) {
             console.error("News Feed Error:", error);
         } finally {
@@ -40,7 +61,7 @@ const News = () => {
                     <p className="text-gray-400">Real-time data stream from the Hacker News Network.</p>
                 </div>
                 <button
-                    onClick={fetchNews}
+                    onClick={() => fetchNews(true)}
                     className="flex items-center gap-2 px-4 py-2 border border-white/10 rounded hover:bg-white/5 hover:text-root-green transition-colors text-sm uppercase tracking-widest"
                 >
                     <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
