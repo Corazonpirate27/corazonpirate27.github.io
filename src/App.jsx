@@ -6,6 +6,8 @@ import Curriculum from './pages/Curriculum';
 import Intelligence from './pages/Intelligence';
 import News from './pages/News';
 import Arcade from './pages/Arcade';
+import Playground from './pages/Playground';
+import CyberTerminal from './pages/CyberTerminal';
 
 export default function App() {
     const location = useLocation();
@@ -18,6 +20,8 @@ export default function App() {
                 <Route path="/intelligence" element={<Intelligence />} />
                 <Route path="/news" element={<News />} />
                 <Route path="/arcade" element={<Arcade />} />
+                <Route path="/playground" element={<Playground />} />
+                <Route path="/terminal" element={<CyberTerminal />} />
             </Routes>
         </Layout>
     );

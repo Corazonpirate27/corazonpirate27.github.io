@@ -1,15 +1,28 @@
-import React, { useState } from 'react';
+import React, { useLayoutEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Cpu, ExternalLink, Gamepad2, Globe, GraduationCap, Menu, Terminal, X } from 'lucide-react';
+import { BookOpen, Code2, Cpu, ExternalLink, Gamepad2, Globe, GraduationCap, Menu, Moon, Sun, Terminal, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
-import MatrixBackground from './MatrixBackground';
+import FluidBackground from './FluidBackground';
 
 const navLinks = [
     { name: 'Courses', path: '/curriculum', icon: GraduationCap },
     { name: 'Intelligence', path: '/intelligence', icon: Cpu },
     { name: 'News', path: '/news', icon: Globe },
-    { name: 'Arcade', path: '/arcade', icon: Gamepad2 }
+    { name: 'Arcade', path: '/arcade', icon: Gamepad2 },
+    { name: 'Playground', path: '/playground', icon: Code2 },
+    { name: 'Terminal', path: '/terminal', icon: Terminal }
 ];
+
+const THEME_STORAGE_KEY = 'root_theme';
+
+const getInitialTheme = () => {
+    if (typeof window === 'undefined') return 'light';
+
+    const savedTheme = window.localStorage.getItem(THEME_STORAGE_KEY);
+    if (savedTheme === 'dark' || savedTheme === 'light') return savedTheme;
+
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+};
 
 const NavLink = ({ link, active, onClick }) => {
     const Icon = link.icon;
@@ -20,8 +33,8 @@ const NavLink = ({ link, active, onClick }) => {
             onClick={onClick}
             className={`flex items-center gap-2 rounded-md px-3 py-2 text-xs font-medium uppercase tracking-widest transition-colors ${
                 active
-                    ? 'bg-root-green text-black'
-                    : 'text-gray-400 hover:bg-white/[0.06] hover:text-white'
+                    ? 'bg-slate-950 text-white dark:bg-white dark:text-slate-950'
+                    : 'text-slate-600 hover:bg-slate-950/5 hover:text-slate-950 dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-white'
             }`}
         >
             <Icon className="h-4 w-4" />
@@ -32,20 +45,29 @@ const NavLink = ({ link, active, onClick }) => {
 
 const Layout = ({ children }) => {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const [theme, setTheme] = useState(getInitialTheme);
     const location = useLocation();
 
-    return (
-        <div className="relative flex min-h-screen flex-col bg-root-dark text-gray-200 selection:bg-root-green/30 selection:text-white">
-            <MatrixBackground />
+    useLayoutEffect(() => {
+        document.documentElement.classList.toggle('dark', theme === 'dark');
+        document.documentElement.dataset.theme = theme;
+        window.localStorage.setItem(THEME_STORAGE_KEY, theme);
+    }, [theme]);
 
-            <nav className="fixed inset-x-0 top-0 z-50 border-b border-white/10 bg-black/85 backdrop-blur-xl">
+    const toggleTheme = () => setTheme((current) => current === 'dark' ? 'light' : 'dark');
+
+    return (
+        <div className="relative isolate flex min-h-screen flex-col bg-transparent text-slate-900 selection:bg-emerald-300/40 selection:text-slate-950 dark:text-slate-100 dark:selection:bg-emerald-400/30 dark:selection:text-white">
+            <FluidBackground />
+
+            <nav className="fixed inset-x-0 top-0 z-50 border-b border-black/10 bg-white/80 backdrop-blur-2xl dark:border-white/10 dark:bg-slate-950/80">
                 <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4">
                     <Link to="/" className="group flex shrink-0 items-center gap-3">
-                        <span className="relative flex h-9 w-9 items-center justify-center rounded-md border border-root-green/30 bg-root-green/10">
-                            <Terminal className="h-5 w-5 text-root-green" />
+                        <span className="relative flex h-9 w-9 items-center justify-center rounded-md border border-emerald-200 bg-emerald-50 dark:border-emerald-400/25 dark:bg-emerald-400/10">
+                            <BookOpen className="h-5 w-5 text-emerald-600 dark:text-emerald-300" />
                         </span>
-                        <span className="hidden font-serif text-base font-bold tracking-widest text-white sm:block">
-                            ROOT<span className="font-normal text-gray-500">.ACADEMY</span>
+                        <span className="hidden font-serif text-base font-bold tracking-widest text-slate-950 dark:text-white sm:block">
+                            ROOT<span className="font-normal text-slate-500 dark:text-slate-400">.ACADEMY</span>
                         </span>
                     </Link>
 
@@ -64,7 +86,7 @@ const Layout = ({ children }) => {
                             href="https://github.com/Corazonpirate27/root.codex.2026"
                             target="_blank"
                             rel="noreferrer"
-                            className="hidden rounded-md border border-root-green/30 bg-root-green px-3 py-2 text-xs font-bold uppercase tracking-widest text-black transition-colors hover:bg-white md:inline-flex"
+                            className="hidden rounded-md border border-emerald-500 bg-emerald-500 px-3 py-2 text-xs font-bold uppercase tracking-widest text-white transition-colors hover:bg-slate-950 dark:hover:bg-white dark:hover:text-slate-950 md:inline-flex"
                         >
                             App
                         </a>
@@ -72,14 +94,23 @@ const Layout = ({ children }) => {
                             href="https://github.com/Corazonpirate27"
                             target="_blank"
                             rel="noreferrer"
-                            className="hidden items-center gap-2 rounded-md border border-white/10 bg-white/[0.03] px-3 py-2 text-xs uppercase tracking-widest text-gray-300 transition-colors hover:bg-white/10 md:inline-flex"
+                            className="hidden items-center gap-2 rounded-md border border-slate-200 bg-white/70 px-3 py-2 text-xs uppercase tracking-widest text-slate-600 transition-colors hover:bg-slate-950 hover:text-white dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:bg-white/10 md:inline-flex"
                         >
                             GitHub
                             <ExternalLink className="h-3 w-3" />
                         </a>
                         <button
                             type="button"
-                            className="rounded-md border border-white/10 bg-white/[0.03] p-2 text-gray-300 transition-colors hover:bg-white/10 lg:hidden"
+                            onClick={toggleTheme}
+                            className="rounded-md border border-slate-200 bg-white/70 p-2 text-slate-600 transition-colors hover:bg-slate-950 hover:text-white dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:bg-white/10"
+                            aria-label="Toggle dark mode"
+                            aria-pressed={theme === 'dark'}
+                        >
+                            {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+                        </button>
+                        <button
+                            type="button"
+                            className="rounded-md border border-slate-200 bg-white/70 p-2 text-slate-600 transition-colors hover:bg-slate-950 hover:text-white dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:bg-white/10 lg:hidden"
                             onClick={() => setIsMobileMenuOpen((open) => !open)}
                             aria-label="Toggle navigation"
                         >
@@ -95,7 +126,7 @@ const Layout = ({ children }) => {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-40 bg-black/95 px-6 pt-24 backdrop-blur-xl lg:hidden"
+                        className="fixed inset-0 z-40 bg-white/95 px-6 pt-24 backdrop-blur-xl dark:bg-slate-950/95 lg:hidden"
                     >
                         <div className="mx-auto grid max-w-sm gap-3">
                             {navLinks.map((link) => (
@@ -110,7 +141,7 @@ const Layout = ({ children }) => {
                                 href="https://github.com/Corazonpirate27/root.codex.2026"
                                 target="_blank"
                                 rel="noreferrer"
-                                className="mt-4 rounded-md border border-root-green/30 bg-root-green px-4 py-3 text-center text-xs font-bold uppercase tracking-widest text-black"
+                                className="mt-4 rounded-md border border-emerald-500 bg-emerald-500 px-4 py-3 text-center text-xs font-bold uppercase tracking-widest text-white"
                             >
                                 Download App
                             </a>
@@ -119,14 +150,14 @@ const Layout = ({ children }) => {
                 )}
             </AnimatePresence>
 
-            <main className="flex-1 pt-16">
+            <main className="relative z-10 flex-1 pt-16">
                 {children}
             </main>
 
-            <footer className="mt-auto border-t border-white/10 bg-black/70 py-6 backdrop-blur">
-                <div className="mx-auto flex max-w-7xl flex-col gap-2 px-4 text-[10px] uppercase tracking-widest text-gray-600 sm:flex-row sm:items-center sm:justify-between">
+            <footer className="relative z-10 mt-auto border-t border-black/10 bg-white/75 py-6 backdrop-blur-2xl dark:border-white/10 dark:bg-slate-950/75">
+                <div className="mx-auto flex max-w-7xl flex-col gap-2 px-4 text-[10px] uppercase tracking-widest text-slate-500 dark:text-slate-400 sm:flex-row sm:items-center sm:justify-between">
                     <span>ROOT Academy 2026</span>
-                    <span>Open feeds // Groq Intelligence // Arcade Lab</span>
+                    <span>Courses // AI guidance // Practice lab</span>
                 </div>
             </footer>
         </div>

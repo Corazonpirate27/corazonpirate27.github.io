@@ -3,7 +3,19 @@
 @tailwind utilities;
 
 @layer base {
+    :root {
+        color-scheme: light;
+    }
+
+    :root.dark {
+        color-scheme: dark;
+    }
+
     body {
-        @apply bg-root-dark text-white font-sans antialiased overflow-x-hidden selection:bg-root-green/30 selection:text-white;
+        @apply overflow-x-hidden bg-[#f7f9fc] font-sans text-slate-950 antialiased selection:bg-emerald-300/40 selection:text-slate-950 dark:bg-slate-950 dark:text-slate-100 dark:selection:bg-emerald-400/30 dark:selection:text-white;
+    }
+
+    html {
+        @apply scroll-smooth;
     }
 }
