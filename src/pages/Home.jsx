@@ -2,7 +2,6 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { BookOpen, Brain, Gamepad2, Newspaper } from 'lucide-react';
-import Canvas3D from '../components/Canvas3D';
 
 const stats = [
     ['44+', 'learning paths'],
@@ -13,7 +12,6 @@ const stats = [
 const Home = () => {
     return (
         <div className="relative mx-auto grid min-h-[calc(100vh-64px)] max-w-7xl items-center gap-10 px-4 py-10 lg:grid-cols-[1.05fr_0.95fr]">
-            <Canvas3D />
             <section className="relative z-10 pointer-events-none *:pointer-events-auto">
                 <motion.p
                     initial={{ opacity: 0, y: 16 }}

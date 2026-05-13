@@ -6,21 +6,21 @@ const games = [
     {
         id: 'reaction', title: 'Reaction Flash', color: '#f97316',
         desc: 'Wait for the signal, then tap fast without jumping early.',
-        image: '/arcade/focus-rally.png',
+        image: '/arcade/reaction-flash.png',
         lvl: '01',
         controls: 'Tap / Click'
     },
     {
         id: 'priority', title: 'Priority Sort', color: '#f59e0b',
         desc: 'Choose the most urgent task first to train calm prioritization.',
-        image: '/arcade/concept-builder.png',
+        image: '/arcade/priority-sort.png',
         lvl: '02',
         controls: 'Pick lowest'
     },
     {
         id: 'oddone', title: 'Odd One Out', color: '#84cc16',
         desc: 'Spot the one item that breaks the group pattern.',
-        image: '/arcade/pattern-guard.png',
+        image: '/arcade/odd-one-out.png',
         lvl: '03',
         controls: 'Find odd'
     },
@@ -34,7 +34,7 @@ const games = [
     {
         id: 'focusgrid', title: 'Focus Grid', color: '#22c55e',
         desc: 'Find numbers in order while resisting visual noise and rushing.',
-        image: '/arcade/logic-trail.png',
+        image: '/arcade/focus-grid.png',
         lvl: '05',
         controls: 'Tap order'
     },
@@ -48,14 +48,14 @@ const games = [
     {
         id: 'equation', title: 'Math Burst', color: '#14b8a6',
         desc: 'Solve quick arithmetic prompts before the round timer drains.',
-        image: '/arcade/concept-builder.png',
+        image: '/arcade/math-burst.png',
         lvl: '07',
         controls: 'Tap answer'
     },
     {
         id: 'pairsum', title: 'Pair Sum', color: '#10b981',
         desc: 'Pick two numbers that make the target total.',
-        image: '/arcade/concept-builder.png',
+        image: '/arcade/pair-sum.png',
         lvl: '08',
         controls: 'Pick pair'
     },
@@ -69,21 +69,21 @@ const games = [
     {
         id: 'logicgate', title: 'Logic Gate', color: '#6366f1',
         desc: 'Judge changing rules using number and color conditions.',
-        image: '/arcade/pattern-guard.png',
+        image: '/arcade/logic-gate.png',
         lvl: '10',
         controls: 'Yes / No'
     },
     {
         id: 'wordvault', title: 'Word Vault', color: '#0ea5e9',
         desc: 'Hold a short word list in mind, then judge recall under pressure.',
-        image: '/arcade/typing-sprint.png',
+        image: '/arcade/word-vault.png',
         lvl: '11',
         controls: 'Recall check'
     },
     {
         id: 'color', title: 'Color Signal', color: '#ec4899',
         desc: 'Match meaning, not instinct, as color words try to distract you.',
-        image: '/arcade/pattern-guard.png',
+        image: '/arcade/color-signal.png',
         lvl: '12',
         controls: 'Tap color'
     },
@@ -97,14 +97,14 @@ const games = [
     {
         id: 'sequence', title: 'Sequence Stack', color: '#8b5cf6',
         desc: 'Memorize and repeat growing number patterns with clean focus.',
-        image: '/arcade/memory-match.png',
+        image: '/arcade/sequence-stack.png',
         lvl: '14',
         controls: 'Tap sequence'
     },
     {
         id: 'numberspan', title: 'Number Span', color: '#7c3aed',
         desc: 'Remember a number chain and replay it backward.',
-        image: '/arcade/memory-match.png',
+        image: '/arcade/number-span.png',
         lvl: '15',
         controls: 'Reverse tap'
     },
@@ -125,49 +125,49 @@ const games = [
     {
         id: 'switchshift', title: 'Switch Shift', color: '#d946ef',
         desc: 'Follow changing rules to practice mental flexibility and control.',
-        image: '/arcade/pattern-guard.png',
+        image: '/arcade/switch-shift.png',
         lvl: '18',
         controls: 'Rule switch'
     },
     {
         id: 'patternecho', title: 'Pattern Echo', color: '#06b6d4',
         desc: 'Watch a color chain, then replay it from memory as it grows.',
-        image: '/arcade/memory-match.png',
+        image: '/arcade/pattern-echo.png',
         lvl: '19',
         controls: 'Repeat color'
     },
     {
         id: 'nback', title: 'N-Back Tap', color: '#0f766e',
         desc: 'Compare the current symbol with the previous one under time pressure.',
-        image: '/arcade/pattern-guard.png',
+        image: '/arcade/n-back-tap.png',
         lvl: '20',
         controls: 'Match check'
     },
     {
         id: 'wordlink', title: 'Word Link', color: '#2563eb',
         desc: 'Pick the word that belongs with the active concept.',
-        image: '/arcade/typing-sprint.png',
+        image: '/arcade/word-link.png',
         lvl: '21',
         controls: 'Choose word'
     },
     {
         id: 'targettap', title: 'Target Tap', color: '#16a34a',
         desc: 'Find the requested target fast as the grid gets busier.',
-        image: '/arcade/logic-trail.png',
+        image: '/arcade/target-tap.png',
         lvl: '22',
         controls: 'Tap target'
     },
     {
         id: 'sortsprint', title: 'Sort Sprint', color: '#ea580c',
         desc: 'Tap numbers from smallest to largest before the timer runs out.',
-        image: '/arcade/concept-builder.png',
+        image: '/arcade/sort-sprint.png',
         lvl: '23',
         controls: 'Sort tap'
     },
     {
         id: 'shapecount', title: 'Shape Count', color: '#9333ea',
         desc: 'Count the requested shape while distractions increase.',
-        image: '/arcade/pattern-guard.png',
+        image: '/arcade/shape-count.png',
         lvl: '24',
         controls: 'Count answer'
     },
