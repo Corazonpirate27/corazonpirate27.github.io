@@ -9,7 +9,8 @@ const Intelligence = lazy(() => import('./pages/Intelligence'));
 const News = lazy(() => import('./pages/News'));
 const Arcade = lazy(() => import('./pages/Arcade'));
 const Playground = lazy(() => import('./pages/Playground'));
-const CyberTerminal = lazy(() => import('./pages/CyberTerminal'));
+const Projects = lazy(() => import('./pages/Projects'));
+const About = lazy(() => import('./pages/About'));
 
 const RouteFallback = () => (
     <div className="flex min-h-[calc(100vh-64px)] items-center justify-center px-4">
@@ -47,7 +48,8 @@ export default function App() {
                             <Route path="/news" element={<News />} />
                             <Route path="/arcade" element={<Arcade />} />
                             <Route path="/playground" element={<Playground />} />
-                            <Route path="/terminal" element={<CyberTerminal />} />
+                            <Route path="/projects" element={<Projects />} />
+                            <Route path="/about" element={<About />} />
                         </Routes>
                     </Suspense>
                 </Layout>

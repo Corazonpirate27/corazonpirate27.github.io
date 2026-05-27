@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import Editor from '@monaco-editor/react';
-import { Play, Terminal, BookOpen, Trash2 } from 'lucide-react';
+import { Play, BookOpen, Trash2 } from 'lucide-react';
 
 const lessons = {
     javascript: {
@@ -196,8 +196,7 @@ const Playground = () => {
                 <div className="flex h-[45%] flex-col overflow-hidden rounded-xl border border-slate-200 bg-slate-950 shadow-xl dark:border-white/10">
                     <div className="flex items-center justify-between border-b border-white/10 bg-slate-900 px-4 py-2">
                         <div className="flex items-center gap-2">
-                            <Terminal className="h-4 w-4 text-emerald-400" />
-                            <span className="font-mono text-xs uppercase tracking-widest text-slate-400">Terminal Output</span>
+                            <span className="font-mono text-xs uppercase tracking-widest text-slate-400">Output</span>
                         </div>
                         <button 
                             onClick={() => setOutput([])}

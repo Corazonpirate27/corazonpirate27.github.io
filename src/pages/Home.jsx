@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { BookOpen, Brain, Gamepad2, Newspaper } from 'lucide-react';
+import { BookOpen, Brain, CheckCircle2, Clock3, Code2, FolderKanban, Gamepad2, Newspaper, Radio, Sparkles } from 'lucide-react';
 
 const stats = [
     ['44+', 'learning paths'],
@@ -9,14 +9,33 @@ const stats = [
     ['4', 'main sections']
 ];
 
+const quickLinks = [
+    { title: 'Education and technology feeds', action: 'Open', to: '/news', icon: Newspaper },
+    { title: 'Practice games', action: 'Play', to: '/arcade', icon: Gamepad2 },
+    { title: 'Code playground', action: 'Build', to: '/playground', icon: Code2 }
+];
+
+const dashboardItems = [
+    { title: 'Continue Course', description: 'Pick a learning path and keep moving.', to: '/curriculum', icon: BookOpen },
+    { title: 'Ask AI', description: 'Get help with roadmap, notes, or revision.', to: '/intelligence', icon: Brain },
+    { title: 'Practice Code', description: 'Run lessons directly in the browser.', to: '/playground', icon: Code2 },
+    { title: 'Open Projects', description: 'View connected apps and live work.', to: '/projects', icon: FolderKanban }
+];
+
+const previews = [
+    { title: 'Arcade', description: 'Quick practice games for active recall.', to: '/arcade', icon: Gamepad2 },
+    { title: 'News', description: 'Education and technology reading space.', to: '/news', icon: Newspaper }
+];
+
 const Home = () => {
     return (
-        <div className="relative mx-auto grid min-h-[calc(100vh-64px)] max-w-7xl items-center gap-10 px-4 py-10 lg:grid-cols-[1.05fr_0.95fr]">
+        <div className="relative mx-auto max-w-7xl px-5 py-12 sm:py-16 lg:px-8">
+            <div className="grid min-h-[calc(100vh-80px)] items-center gap-12 lg:grid-cols-[1.05fr_0.95fr]">
             <section className="relative z-10 pointer-events-none *:pointer-events-auto">
                 <motion.p
                     initial={{ opacity: 0, y: 16 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="mb-4 font-mono text-[10px] uppercase tracking-widest text-emerald-600 dark:text-emerald-300"
+                    className="mb-5 font-mono text-[11px] uppercase tracking-widest text-emerald-600 dark:text-emerald-300"
                 >
                     ROOT Academy 2026
                 </motion.p>
@@ -25,7 +44,7 @@ const Home = () => {
                     initial={{ opacity: 0, y: 16 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.08 }}
-                    className="mb-6 max-w-3xl font-serif text-5xl font-bold leading-[1.02] text-slate-950 dark:text-white md:text-7xl"
+                    className="mb-7 max-w-3xl font-serif text-5xl font-bold leading-[1.01] text-slate-950 dark:text-white sm:text-6xl md:text-8xl"
                 >
                     A calmer place to learn what matters.
                 </motion.h1>
@@ -34,7 +53,7 @@ const Home = () => {
                     initial={{ opacity: 0, y: 16 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.16 }}
-                    className="mb-8 max-w-2xl text-base leading-7 text-slate-600 dark:text-slate-300 md:text-lg"
+                    className="mb-9 max-w-2xl text-lg leading-8 text-slate-600 dark:text-slate-300 md:text-xl"
                 >
                     Explore school subjects, career fields, modern technology, news, AI guidance, and practice drills in one real education workspace.
                 </motion.p>
@@ -47,14 +66,14 @@ const Home = () => {
                 >
                     <Link
                         to="/curriculum"
-                        className="inline-flex items-center justify-center gap-2 rounded-md bg-emerald-500 px-5 py-3 text-sm font-bold uppercase tracking-widest text-white transition-colors hover:bg-slate-950 dark:hover:bg-white dark:hover:text-slate-950"
+                        className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg bg-emerald-500 px-6 py-3.5 text-sm font-bold uppercase tracking-widest text-white shadow-[0_18px_50px_rgba(16,185,129,0.22)] transition-colors hover:bg-slate-950 dark:hover:bg-white dark:hover:text-slate-950"
                     >
                         <BookOpen className="h-4 w-4" />
                         Start Learning
                     </Link>
                     <Link
                         to="/intelligence"
-                        className="inline-flex items-center justify-center gap-2 rounded-md border border-slate-200 bg-white/70 px-5 py-3 text-sm font-bold uppercase tracking-widest text-slate-700 transition-colors hover:border-emerald-300 hover:text-emerald-700 dark:border-white/10 dark:bg-white/5 dark:text-white dark:hover:border-emerald-300 dark:hover:text-emerald-300"
+                        className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white/70 px-6 py-3.5 text-sm font-bold uppercase tracking-widest text-slate-700 shadow-sm backdrop-blur-xl transition-colors hover:border-emerald-300 hover:text-emerald-700 dark:border-white/10 dark:bg-white/5 dark:text-white dark:hover:border-emerald-300 dark:hover:text-emerald-300"
                     >
                         <Brain className="h-4 w-4" />
                         Ask AI
@@ -68,44 +87,126 @@ const Home = () => {
                 transition={{ delay: 0.18 }}
                 className="relative z-10 grid gap-4 pointer-events-none *:pointer-events-auto"
             >
-                <div className="rounded-lg border border-white/70 bg-white/70 p-5 shadow-[0_24px_80px_rgba(15,23,42,0.12)] backdrop-blur-2xl dark:border-white/10 dark:bg-slate-900/70">
-                    <div className="mb-4 flex items-center justify-between border-b border-slate-200 pb-4 dark:border-white/10">
-                        <div>
-                            <p className="font-mono text-[10px] uppercase tracking-widest text-slate-500 dark:text-slate-400">Learning Space</p>
-                            <h2 className="font-serif text-2xl font-bold text-slate-950 dark:text-white">Education Hub</h2>
-                        </div>
-                        <span className="rounded border border-emerald-200 bg-emerald-50 px-2.5 py-1 font-mono text-[10px] uppercase tracking-widest text-emerald-700 dark:border-emerald-400/20 dark:bg-emerald-400/10 dark:text-emerald-300">
-                            Live
-                        </span>
-                    </div>
+                <div className="relative overflow-hidden rounded-lg border border-white/70 bg-white/75 p-6 shadow-[0_28px_90px_rgba(15,23,42,0.14)] backdrop-blur-2xl dark:border-white/10 dark:bg-slate-900/75">
+                    <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-transparent via-emerald-400/70 to-sky-400/40" />
 
-                    <div className="grid gap-3">
-                        <Link to="/news" className="group flex items-center justify-between rounded-md border border-slate-200 bg-white/70 p-4 transition-colors hover:border-emerald-300 hover:bg-emerald-50 dark:border-white/10 dark:bg-white/5 dark:hover:border-emerald-300/40 dark:hover:bg-emerald-400/10">
-                            <span className="flex items-center gap-3 text-sm font-medium text-slate-800 dark:text-white">
-                                <Newspaper className="h-5 w-5 text-emerald-600 dark:text-emerald-300" />
-                                Education and technology feeds
+                    <div className="relative">
+                        <div className="mb-6 flex items-center justify-between gap-4 border-b border-slate-200 pb-5 dark:border-white/10">
+                            <div>
+                                <p className="font-mono text-[10px] uppercase tracking-widest text-slate-500 dark:text-slate-400">Learning Space</p>
+                                <h2 className="mt-1 font-serif text-3xl font-bold text-slate-950 dark:text-white">Education Hub</h2>
+                            </div>
+                            <span className="inline-flex items-center gap-2 rounded border border-emerald-200 bg-emerald-50 px-2.5 py-1 font-mono text-[10px] uppercase tracking-widest text-emerald-700 dark:border-emerald-400/20 dark:bg-emerald-400/10 dark:text-emerald-300">
+                                <Radio className="h-3 w-3" />
+                                Live
                             </span>
-                            <span className="font-mono text-[10px] uppercase tracking-widest text-slate-500 group-hover:text-emerald-700 dark:text-slate-400 dark:group-hover:text-emerald-300">Open</span>
-                        </Link>
-                        <Link to="/arcade" className="group flex items-center justify-between rounded-md border border-slate-200 bg-white/70 p-4 transition-colors hover:border-emerald-300 hover:bg-emerald-50 dark:border-white/10 dark:bg-white/5 dark:hover:border-emerald-300/40 dark:hover:bg-emerald-400/10">
-                            <span className="flex items-center gap-3 text-sm font-medium text-slate-800 dark:text-white">
-                                <Gamepad2 className="h-5 w-5 text-emerald-600 dark:text-emerald-300" />
-                                Practice games
-                            </span>
-                            <span className="font-mono text-[10px] uppercase tracking-widest text-slate-500 group-hover:text-emerald-700 dark:text-slate-400 dark:group-hover:text-emerald-300">Play</span>
-                        </Link>
+                        </div>
+
+                        <div className="mb-6 grid divide-y divide-slate-200 border-b border-slate-200 pb-6 dark:divide-white/10 dark:border-white/10 sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+                            {stats.map(([value, label]) => (
+                                <div key={label} className="py-3 first:pt-0 last:pb-0 sm:px-4 sm:py-0 sm:first:pl-0 sm:last:pr-0">
+                                    <div className="font-serif text-3xl font-bold text-slate-950 dark:text-white">{value}</div>
+                                    <div className="mt-1 text-[10px] uppercase tracking-widest text-slate-500 dark:text-slate-400">{label}</div>
+                                </div>
+                            ))}
+                        </div>
+
+                        <div className="grid">
+                            {quickLinks.map((item, index) => {
+                                const Icon = item.icon;
+                                return (
+                                    <Link
+                                        key={item.title}
+                                        to={item.to}
+                                        className={`group flex min-h-16 items-center justify-between gap-4 py-3 transition-colors hover:text-emerald-700 dark:hover:text-emerald-300 ${index > 0 ? 'border-t border-slate-200 dark:border-white/10' : ''}`}
+                                    >
+                                        <span className="flex min-w-0 items-center gap-3 text-sm font-medium text-slate-800 dark:text-white">
+                                            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-slate-950/[0.04] text-emerald-600 transition-colors dark:bg-white/[0.06] dark:text-emerald-300">
+                                                <Icon className="h-5 w-5" />
+                                            </span>
+                                            <span className="truncate">{item.title}</span>
+                                        </span>
+                                        <span className="shrink-0 font-mono text-[10px] uppercase tracking-widest text-slate-500 group-hover:text-emerald-700 dark:text-slate-400 dark:group-hover:text-emerald-300">{item.action}</span>
+                                    </Link>
+                                );
+                            })}
+                        </div>
                     </div>
                 </div>
 
-                <div className="grid grid-cols-3 gap-3">
-                    {stats.map(([value, label]) => (
-                        <div key={label} className="rounded-lg border border-white/70 bg-white/65 p-4 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/70">
-                            <div className="font-serif text-2xl font-bold text-slate-950 dark:text-white">{value}</div>
-                            <div className="mt-1 text-[10px] uppercase tracking-widest text-slate-500 dark:text-slate-400">{label}</div>
-                        </div>
-                    ))}
+                <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="rounded-lg border border-white/70 bg-white/70 p-5 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/70">
+                        <Sparkles className="mb-3 h-5 w-5 text-emerald-600 dark:text-emerald-300" />
+                        <p className="text-sm leading-6 text-slate-600 dark:text-slate-300">Designed for focused study sessions with tools close at hand.</p>
+                    </div>
+                    <div className="rounded-lg border border-white/70 bg-white/70 p-5 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/70">
+                        <Brain className="mb-3 h-5 w-5 text-emerald-600 dark:text-emerald-300" />
+                        <p className="text-sm leading-6 text-slate-600 dark:text-slate-300">AI guidance, coding practice, games, and feeds work as one workspace.</p>
+                    </div>
                 </div>
             </motion.section>
+            </div>
+
+            <section className="relative z-10 py-8">
+                <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                    <div>
+                        <p className="font-mono text-[11px] uppercase tracking-widest text-emerald-600 dark:text-emerald-300">Student Dashboard</p>
+                        <h2 className="mt-2 font-serif text-4xl font-bold text-slate-950 dark:text-white">Today's learning</h2>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+                        <Clock3 className="h-4 w-4 text-emerald-600 dark:text-emerald-300" />
+                        Pick one action and keep momentum.
+                    </div>
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                    {dashboardItems.map((item) => {
+                        const Icon = item.icon;
+                        return (
+                            <Link
+                                key={item.title}
+                                to={item.to}
+                                className="group rounded-lg border border-white/70 bg-white/70 p-5 shadow-sm backdrop-blur-2xl transition-all duration-300 hover:-translate-y-1 hover:border-emerald-300 hover:shadow-[0_20px_60px_rgba(15,23,42,0.14)] dark:border-white/10 dark:bg-slate-900/70"
+                            >
+                                <div className="mb-5 flex items-center justify-between">
+                                    <span className="flex h-11 w-11 items-center justify-center rounded-lg bg-slate-950/[0.04] text-emerald-600 dark:bg-white/[0.06] dark:text-emerald-300">
+                                        <Icon className="h-5 w-5" />
+                                    </span>
+                                    <CheckCircle2 className="h-4 w-4 text-slate-300 transition-colors group-hover:text-emerald-500 dark:text-slate-600" />
+                                </div>
+                                <h3 className="font-serif text-xl font-bold text-slate-950 dark:text-white">{item.title}</h3>
+                                <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">{item.description}</p>
+                            </Link>
+                        );
+                    })}
+                </div>
+            </section>
+
+            <section className="relative z-10 pb-10 pt-4">
+                <div className="mb-6">
+                    <p className="font-mono text-[11px] uppercase tracking-widest text-emerald-600 dark:text-emerald-300">Previews</p>
+                    <h2 className="mt-2 font-serif text-4xl font-bold text-slate-950 dark:text-white">Explore the workspace</h2>
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-2">
+                    {previews.map((preview) => {
+                        const Icon = preview.icon;
+                        return (
+                            <Link
+                                key={preview.title}
+                                to={preview.to}
+                                className="group relative min-h-56 overflow-hidden rounded-lg border border-white/70 bg-white/70 p-6 shadow-sm backdrop-blur-2xl transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_24px_80px_rgba(15,23,42,0.15)] dark:border-white/10 dark:bg-slate-900/70"
+                            >
+                                <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-transparent via-emerald-400/60 to-sky-400/40" />
+                                <Icon className="mb-10 h-7 w-7 text-emerald-600 dark:text-emerald-300" />
+                                <h3 className="font-serif text-2xl font-bold text-slate-950 dark:text-white">{preview.title}</h3>
+                                <p className="mt-3 max-w-xs text-sm leading-6 text-slate-600 dark:text-slate-300">{preview.description}</p>
+                                <span className="mt-5 inline-flex text-xs font-bold uppercase tracking-widest text-emerald-700 dark:text-emerald-300">Open</span>
+                            </Link>
+                        );
+                    })}
+                </div>
+            </section>
         </div>
     );
 };
