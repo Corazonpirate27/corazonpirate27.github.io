@@ -469,27 +469,27 @@ const CourseCard = ({ course }) => {
     // Choose image based on course type
     const getImage = (id) => {
         switch (id) {
-            case 'cyber': return '/matrix_pro_cyber.png'; // High-Fidelity
-            case 'data': return '/matrix_pro_data.png';   // High-Fidelity
-            case 'ai': return '/matrix_curr_ai.png';
-            case 'iot': return '/matrix_curr_iot.png';
-            case 'fullstack': return '/matrix_code_banner.png';
-            case 'devops': return '/matrix_curr_cloud.png';
-            case 'cloud': return '/matrix_curr_cloud.png';
-            case 'opensource': return '/matrix_code_banner.png';
-            case 'cs': return '/matrix_code_banner.png';
-            case 'mobile': return '/matrix_curr_mobile.png';
-            case 'web3': return '/matrix_security_banner.png';
-            case 'gamedev': return '/matrix_curr_gamedev.png';
-            case 'sysadmin': return '/matrix_security_banner.png';
-            case 'qa': return '/matrix_security_banner.png';
-            case 'agents': return '/matrix_curr_ai.png';
-            case 'mlops': return '/matrix_curr_data.png';
-            case 'robotics': return '/matrix_curr_iot.png';
-            case 'xr': return '/matrix_curr_gamedev.png';
-            case 'quantum': return '/matrix_code_banner.png';
-            case 'privacy': return '/matrix_security_banner.png';
-            default: return '/matrix_code_banner.png';
+            case 'cyber': return '/course-tech/security.webp';
+            case 'data': return '/course-tech/ai-data.webp';
+            case 'ai': return '/course-tech/ai-data.webp';
+            case 'iot': return '/course-tech/maker-lab.webp';
+            case 'fullstack': return '/course-tech/software.webp';
+            case 'devops': return '/course-tech/cloud-devops.webp';
+            case 'cloud': return '/course-tech/cloud-devops.webp';
+            case 'opensource': return '/course-tech/software-lab.webp';
+            case 'cs': return '/course-tech/software-lab.webp';
+            case 'mobile': return '/course-tech/product-mobile.webp';
+            case 'web3': return '/course-tech/security.webp';
+            case 'gamedev': return '/arcade/concept-builder.webp';
+            case 'sysadmin': return '/course-tech/cloud-devops.webp';
+            case 'qa': return '/course-tech/software-lab.webp';
+            case 'agents': return '/course-tech/ai-data.webp';
+            case 'mlops': return '/course-tech/ai-data.webp';
+            case 'robotics': return '/course-tech/maker-lab.webp';
+            case 'xr': return '/arcade/pattern-echo.webp';
+            case 'quantum': return '/course-tech/software-lab.webp';
+            case 'privacy': return '/course-tech/security.webp';
+            default: return '/course-tech/software.webp';
         }
     };
 
@@ -498,38 +498,38 @@ const CourseCard = ({ course }) => {
             layout
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="group relative bg-[#050505] border border-white/10 rounded-xl overflow-hidden hover:border-root-green/50 transition-all duration-300 md:hover:-translate-y-1"
+            className="group relative overflow-hidden rounded-lg border border-slate-200 bg-white/90 shadow-sm backdrop-blur-xl transition-all duration-300 hover:border-emerald-300 hover:bg-white md:hover:-translate-y-1 dark:border-white/10 dark:bg-slate-950/90 dark:hover:border-emerald-300/50"
         >
             {/* Image Header */}
-            <div className="relative h-40 w-full overflow-hidden border-b border-white/5">
-                <img src={getImage(course.id)} alt={course.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-60 group-hover:opacity-100 grayscale group-hover:grayscale-0" />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#050505] to-transparent opacity-80"></div>
+            <div className="relative h-40 w-full overflow-hidden border-b border-slate-200 dark:border-white/10">
+                <img src={getImage(course.id)} alt={course.name} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent dark:from-slate-950"></div>
 
 
             </div>
 
             <div className="p-6">
                 <div className="flex flex-wrap justify-between items-start gap-3 mb-4">
-                    <span className="text-[10px] uppercase tracking-widest font-bold px-3 py-1 rounded-full border border-white/10 bg-white/5 text-gray-400">
+                    <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-slate-300">
                         {course.meta.role}
                     </span>
                     <span className="text-root-green">{course.icon}</span>
                 </div>
 
                 <div className="flex flex-wrap gap-2 mb-4">
-                    <span className="text-[10px] uppercase tracking-widest px-3 py-1 rounded-full border border-white/10 bg-white/5 text-gray-400">
+                    <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[10px] uppercase tracking-widest text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-slate-300">
                         {track}
                     </span>
                     {isFeatured && (
-                        <span className="text-[10px] uppercase tracking-widest px-3 py-1 rounded-full border border-root-green/20 bg-root-green/10 text-root-green font-bold">
+                        <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-emerald-700 dark:border-emerald-400/20 dark:bg-emerald-400/10 dark:text-emerald-300">
                             2026 Recommended
                         </span>
                     )}
                 </div>
 
-                <h3 className="text-xl font-bold text-white mb-2 font-serif group-hover:text-root-green transition-colors">{course.name}</h3>
+                <h3 className="mb-2 font-serif text-xl font-bold text-slate-950 transition-colors group-hover:text-emerald-700 dark:text-white dark:group-hover:text-emerald-300">{course.name}</h3>
 
-                <div className="flex flex-wrap gap-4 text-xs text-gray-400 font-mono mb-6 pb-6 border-b border-white/5">
+                <div className="mb-6 flex flex-wrap gap-4 border-b border-slate-200 pb-6 font-mono text-xs text-slate-500 dark:border-white/10 dark:text-slate-400">
                     <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-root-green"></span>{course.meta.time}</span>
                     <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-root-green"></span>{course.meta.salary}</span>
                 </div>
@@ -537,7 +537,7 @@ const CourseCard = ({ course }) => {
                 <div className="space-y-3">
                     <button
                         onClick={() => setExpanded(!expanded)}
-                        className="w-full bg-[#00FF41] hover:bg-white text-black font-black uppercase tracking-widest py-3 rounded text-xs transition-colors shadow-[0_0_15px_rgba(0,255,65,0.2)] hover:shadow-[0_0_20px_rgba(255,255,255,0.4)] flex items-center justify-center gap-2"
+                        className="flex w-full items-center justify-center gap-2 rounded-md bg-emerald-500 py-3 text-xs font-black uppercase tracking-widest text-white shadow-sm transition-colors hover:bg-slate-950 dark:hover:bg-white dark:hover:text-slate-950"
                     >
                         {expanded ? 'TERMINATE UPLINK' : 'BOOT SIMULATION'}
                         {expanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
@@ -558,13 +558,13 @@ const CourseCard = ({ course }) => {
                                             href={link.url}
                                             target="_blank"
                                             rel="noreferrer"
-                                            className="block p-3 rounded bg-white/5 hover:bg-white/10 border border-white/5 hover:border-root-green/30 transition-all group/link"
+                                            className="group/link block rounded-md border border-slate-200 bg-slate-50 p-3 transition-all hover:border-emerald-300 hover:bg-emerald-50 dark:border-white/10 dark:bg-white/5 dark:hover:border-emerald-300/40 dark:hover:bg-emerald-400/10"
                                         >
                                             <div className="flex justify-between items-center">
-                                                <div className="text-xs font-bold text-gray-300 group-hover/link:text-white">{link.title}</div>
-                                                <ExternalLink className="w-3 h-3 text-gray-600" />
+                                                <div className="text-xs font-bold text-slate-700 group-hover/link:text-emerald-700 dark:text-slate-300 dark:group-hover/link:text-white">{link.title}</div>
+                                                <ExternalLink className="w-3 h-3 text-slate-400" />
                                             </div>
-                                            <div className="text-[10px] text-gray-600 mt-1">{link.tag}</div>
+                                            <div className="mt-1 text-[10px] text-slate-500 dark:text-slate-500">{link.tag}</div>
                                         </a>
                                     ))}
                                 </div>
@@ -591,22 +591,23 @@ const Curriculum = () => {
     });
 
     return (
-        <div className="max-w-7xl mx-auto px-4 py-12">
+        <div className="mx-auto max-w-7xl px-4 py-10 md:py-12">
             <div className="mb-10 space-y-6">
                 <div className="max-w-3xl">
-                    <h2 className="text-5xl font-serif font-bold text-white mb-4">Course Module 2026</h2>
-                    <p className="text-gray-400 text-lg leading-relaxed">
+                    <p className="mb-3 font-mono text-[10px] uppercase tracking-widest text-emerald-600 dark:text-emerald-300">Course Roadmaps</p>
+                    <h2 className="mb-4 font-serif text-3xl font-bold text-slate-950 dark:text-white md:text-5xl">Course Module 2026</h2>
+                    <p className="text-base leading-7 text-slate-600 dark:text-slate-300 md:text-lg">
                         Explore the redesigned flagship track for modern tech careers. Filter by learning path, search for the next mission, and launch the 2026-certified course roadmap.
                     </p>
                 </div>
 
                 <div className="grid gap-4 md:grid-cols-2 items-center">
-                    <div className="relative rounded-xl border border-white/10 bg-[#050505] p-4">
+                    <div className="relative rounded-lg border border-slate-200 bg-white/90 p-4 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/90">
                         <input
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
                             placeholder="Search courses, tracks, roles..."
-                            className="w-full bg-transparent border border-white/10 rounded-lg px-4 py-3 text-sm text-white placeholder:text-gray-500 focus:border-root-green focus:outline-none"
+                            className="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-slate-950 outline-none placeholder:text-slate-400 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 dark:border-white/10 dark:bg-slate-900 dark:text-white dark:placeholder:text-slate-500 dark:focus:border-emerald-300 dark:focus:ring-emerald-400/10"
                         />
                     </div>
                     <div className="flex flex-wrap gap-2">
@@ -614,7 +615,7 @@ const Curriculum = () => {
                             <button
                                 key={track}
                                 onClick={() => setActiveTrack(track)}
-                                className={`px-4 py-2 text-xs uppercase tracking-widest rounded-full transition-all ${activeTrack === track ? 'bg-root-green text-black border border-root-green' : 'bg-white/5 text-gray-300 border border-white/10 hover:bg-white/10'}`}
+                                className={`rounded-full border px-4 py-2 text-xs uppercase tracking-widest transition-all ${activeTrack === track ? 'border-emerald-500 bg-emerald-500 text-white' : 'border-slate-200 bg-white/70 text-slate-600 hover:border-emerald-300 hover:bg-emerald-50 dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:bg-white/10'}`}
                             >
                                 {track}
                             </button>
@@ -630,7 +631,7 @@ const Curriculum = () => {
             </div>
 
             {filteredCourses.length === 0 && (
-                <div className="mt-12 rounded-3xl border border-white/10 bg-[#050505] p-12 text-center text-gray-400">
+                <div className="mt-12 rounded-lg border border-slate-200 bg-white/90 p-12 text-center text-slate-500 dark:border-white/10 dark:bg-slate-950/90 dark:text-slate-400">
                     No matching tracks found. Try broadening your search or selecting a different learning path.
                 </div>
             )}

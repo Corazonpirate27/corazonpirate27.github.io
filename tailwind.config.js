@@ -7,6 +7,9 @@ export default {
     ],
     theme: {
         extend: {
+            colors: {
+                'root-green': '#10b981',
+            },
             fontFamily: {
                 sans: ['Inter', 'sans-serif'],
                 serif: ['Space Grotesk', 'sans-serif'],

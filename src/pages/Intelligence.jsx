@@ -114,19 +114,19 @@ const Intelligence = () => {
     };
 
     return (
-        <div className="mx-auto flex h-[calc(100vh-64px)] max-w-5xl flex-col px-4 py-8">
+        <div className="mx-auto flex min-h-[calc(100vh-5rem)] max-w-5xl flex-col px-4 py-8">
             <div className="mb-6 flex items-center justify-between gap-4">
                 <div>
-                    <p className="mb-2 font-mono text-[10px] uppercase tracking-widest text-root-green">Groq Intelligence</p>
-                    <h2 className="flex items-center gap-3 font-serif text-2xl font-bold text-white md:text-3xl">
-                        <Cpu className="text-root-green" />
+                    <p className="mb-2 font-mono text-[10px] uppercase tracking-widest text-emerald-600 dark:text-emerald-300">Groq Intelligence</p>
+                    <h2 className="flex items-center gap-3 font-serif text-2xl font-bold text-slate-950 dark:text-white md:text-3xl">
+                        <Cpu className="text-emerald-600 dark:text-emerald-300" />
                         Intelligence Hub
                     </h2>
                     <div className="mt-1 flex items-center gap-2">
-                        <span className="flex items-center gap-2 rounded border border-white/10 px-2 py-0.5 font-mono text-[10px] uppercase tracking-widest text-gray-500 md:text-xs">
+                        <span className="flex items-center gap-2 rounded border border-slate-200 bg-white/70 px-2 py-0.5 font-mono text-[10px] uppercase tracking-widest text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-slate-400 md:text-xs">
                             {PROVIDER.icon} {PROVIDER.name}
                         </span>
-                        <span className="hidden font-mono text-[10px] text-gray-600 sm:inline">// free key required</span>
+                        <span className="hidden font-mono text-[10px] text-slate-500 dark:text-slate-500 sm:inline">// free key required</span>
                     </div>
                 </div>
 
@@ -134,7 +134,7 @@ const Intelligence = () => {
                     <button
                         type="button"
                         onClick={() => setShowSettings(true)}
-                        className="rounded-lg border border-white/10 bg-white/5 p-3 transition-colors hover:border-root-green hover:text-root-green"
+                        className="rounded-lg border border-slate-200 bg-white/70 p-3 text-slate-600 shadow-sm transition-colors hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700 dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:text-emerald-300"
                         aria-label="Open settings"
                     >
                         <Settings className="h-5 w-5" />
@@ -142,8 +142,8 @@ const Intelligence = () => {
                 </div>
             </div>
 
-            <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-md border border-white/10 bg-black/50">
-                <div className="absolute top-0 h-1 w-full bg-gradient-to-r from-transparent via-root-green/50 to-transparent opacity-50" />
+            <div className="relative flex min-h-[520px] flex-1 flex-col overflow-hidden rounded-lg border border-slate-200 bg-white/90 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/90">
+                <div className="absolute top-0 h-1 w-full bg-gradient-to-r from-transparent via-emerald-400/70 to-transparent" />
 
                 <div ref={scrollRef} className="custom-scrollbar flex-1 space-y-6 overflow-y-auto p-4 md:p-6">
                     {messages.map((message, index) => (
@@ -155,21 +155,21 @@ const Intelligence = () => {
                         >
                             <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-md border ${
                                 message.role === 'user'
-                                    ? 'border-white/20 bg-white/10'
+                                    ? 'border-slate-200 bg-slate-100 dark:border-white/20 dark:bg-white/10'
                                     : message.role === 'assistant'
-                                      ? 'border-root-green/20 bg-root-green/10'
-                                      : 'border-red-500/20 bg-red-500/10'
+                                      ? 'border-emerald-200 bg-emerald-50 dark:border-emerald-400/20 dark:bg-emerald-400/10'
+                                      : 'border-red-200 bg-red-50 dark:border-red-500/20 dark:bg-red-500/10'
                             }`}
                             >
-                                {message.role === 'user' ? <User className="h-4 w-4 text-white" /> :
-                                    message.role === 'assistant' ? <Cpu className="h-4 w-4 text-root-green" /> : <AlertTriangle className="h-4 w-4 text-red-500" />}
+                                {message.role === 'user' ? <User className="h-4 w-4 text-slate-600 dark:text-white" /> :
+                                    message.role === 'assistant' ? <Cpu className="h-4 w-4 text-emerald-600 dark:text-emerald-300" /> : <AlertTriangle className="h-4 w-4 text-red-500" />}
                             </div>
                             <div className={`max-w-[85%] whitespace-pre-wrap rounded-md p-3 text-sm leading-relaxed md:max-w-2xl ${
                                 message.role === 'user'
-                                    ? 'bg-white/5 text-gray-200'
+                                    ? 'bg-slate-100 text-slate-800 dark:bg-white/5 dark:text-gray-200'
                                     : message.role === 'assistant'
-                                      ? 'border border-root-green/10 bg-root-green/5 text-gray-100'
-                                      : 'font-mono text-red-400'
+                                      ? 'border border-emerald-200 bg-emerald-50 text-slate-800 dark:border-emerald-400/10 dark:bg-emerald-400/5 dark:text-gray-100'
+                                      : 'font-mono text-red-600 dark:text-red-400'
                             }`}
                             >
                                 {message.content}
@@ -179,22 +179,22 @@ const Intelligence = () => {
 
                     {isLoading && (
                         <div className="flex gap-4">
-                            <div className="flex h-8 w-8 items-center justify-center rounded border border-root-green/20 bg-root-green/10">
-                                <RefreshCw className="h-4 w-4 animate-spin text-root-green" />
+                            <div className="flex h-8 w-8 items-center justify-center rounded border border-emerald-200 bg-emerald-50 dark:border-emerald-400/20 dark:bg-emerald-400/10">
+                                <RefreshCw className="h-4 w-4 animate-spin text-emerald-600 dark:text-emerald-300" />
                             </div>
-                            <div className="flex items-center text-xs text-gray-500">Decrypting response...</div>
+                            <div className="flex items-center text-xs text-slate-500 dark:text-gray-500">Decrypting response...</div>
                         </div>
                     )}
                 </div>
 
-                <div className="border-t border-white/10 bg-black/50 p-4">
+                <div className="border-t border-slate-200 bg-slate-50/90 p-4 dark:border-white/10 dark:bg-slate-900/90">
                     <div className="mb-3 flex flex-wrap gap-2">
                         {templates.map((template, index) => (
                             <button
                                 key={template}
                                 type="button"
                                 onClick={() => setInput(template)}
-                                className="rounded-md border border-white/10 bg-white/5 px-3 py-1.5 text-[10px] uppercase tracking-widest text-gray-400 transition-colors hover:border-root-green hover:text-root-green"
+                                className="rounded-md border border-slate-200 bg-white px-3 py-1.5 text-[10px] uppercase tracking-widest text-slate-500 transition-colors hover:border-emerald-300 hover:text-emerald-700 dark:border-white/10 dark:bg-white/5 dark:text-gray-400 dark:hover:text-emerald-300"
                             >
                                 Prompt {index + 1}
                             </button>
@@ -206,12 +206,12 @@ const Intelligence = () => {
                             value={input}
                             onChange={(event) => setInput(event.target.value)}
                             placeholder={`Message ${PROVIDER.name}...`}
-                            className="w-full rounded-lg border border-white/10 bg-white/5 py-4 pl-4 pr-12 font-mono text-sm text-white outline-none transition-all placeholder:text-gray-600 focus:border-root-green focus:ring-1 focus:ring-root-green/50"
+                            className="w-full rounded-lg border border-slate-200 bg-white py-4 pl-4 pr-12 font-mono text-sm text-slate-950 outline-none transition-all placeholder:text-slate-400 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 dark:border-white/10 dark:bg-slate-950 dark:text-white dark:placeholder:text-gray-600 dark:focus:border-emerald-300 dark:focus:ring-emerald-400/10"
                         />
                         <button
                             type="submit"
                             disabled={isLoading}
-                            className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-gray-400 transition-colors hover:text-root-green disabled:opacity-50"
+                            className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-slate-400 transition-colors hover:text-emerald-600 disabled:opacity-50 dark:text-gray-400 dark:hover:text-emerald-300"
                             aria-label="Send message"
                         >
                             <Send className="h-5 w-5" />

@@ -340,10 +340,10 @@ const Arcade = () => {
                 {activeGame && (
                     <motion.div
                         initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 p-0 backdrop-blur-xl md:p-4"
+                        className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/80 p-3 backdrop-blur-md md:p-6"
                     >
                         <motion.div
-                            className="relative flex h-full w-full flex-col overflow-hidden rounded-none border-0 bg-white dark:bg-slate-950 md:h-auto md:max-h-[90vh] md:max-w-5xl md:rounded-lg md:border md:border-white/20"
+                            className="relative flex h-full w-full flex-col overflow-hidden rounded-lg border border-slate-200 bg-white shadow-2xl dark:border-white/20 dark:bg-slate-950 md:h-auto md:max-h-[86vh] md:max-w-5xl"
                         >
                             <div className="flex shrink-0 items-center justify-between border-b border-slate-200 bg-white p-4 dark:border-white/10 dark:bg-slate-900">
                                 <div>
