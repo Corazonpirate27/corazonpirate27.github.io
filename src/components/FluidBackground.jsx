@@ -6,8 +6,8 @@ const getMotionProfile = () => {
     const smallViewport = window.innerWidth < 768;
 
     if (reducedMotion) return { fps: 0, pixelRatio: 1, fieldScale: 0.86 };
-    if (coarsePointer || smallViewport) return { fps: 24, pixelRatio: 1.15, fieldScale: 0.82 };
-    return { fps: 30, pixelRatio: 1.35, fieldScale: 1 };
+    if (coarsePointer || smallViewport) return { fps: 12, pixelRatio: 1, fieldScale: 0.82 };
+    return { fps: 18, pixelRatio: 1.1, fieldScale: 1 };
 };
 
 const FluidBackground = () => {
@@ -24,6 +24,7 @@ const FluidBackground = () => {
         let profile = getMotionProfile();
         let pixelRatio = Math.min(window.devicePixelRatio || 1, profile.pixelRatio);
         let time = 0;
+        let isPaused = document.hidden;
 
         const resize = () => {
             width = window.innerWidth;
@@ -40,6 +41,11 @@ const FluidBackground = () => {
         const scheduleResize = () => {
             window.clearTimeout(resizeId);
             resizeId = window.setTimeout(resize, 120);
+        };
+
+        const handleVisibilityChange = () => {
+            isPaused = document.hidden;
+            lastFrame = 0;
         };
 
         const drawField = (x, y, radius, colors) => {
@@ -137,6 +143,11 @@ const FluidBackground = () => {
         };
 
         const draw = (timestamp = 0) => {
+            if (isPaused) {
+                frameId = requestAnimationFrame(draw);
+                return;
+            }
+
             if (!profile.fps) {
                 ctx.clearRect(0, 0, width, height);
                 const isDark = document.documentElement.classList.contains('dark');
@@ -208,11 +219,13 @@ const FluidBackground = () => {
         resize();
         draw();
         window.addEventListener('resize', scheduleResize);
+        document.addEventListener('visibilitychange', handleVisibilityChange);
 
         return () => {
             cancelAnimationFrame(frameId);
             window.clearTimeout(resizeId);
             window.removeEventListener('resize', scheduleResize);
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
         };
     }, []);
 

@@ -27,10 +27,10 @@ export default function BootSequence({ onComplete }) {
                 clearInterval(interval);
                 setTimeout(() => {
                     setIsVisible(false);
-                    setTimeout(onComplete, 500); // Wait for fade out animation
-                }, 600);
+                    setTimeout(onComplete, 220);
+                }, 180);
             }
-        }, 120);
+        }, 45);
 
         return () => clearInterval(interval);
     }, [onComplete]);
@@ -39,7 +39,7 @@ export default function BootSequence({ onComplete }) {
         <motion.div
             initial={{ opacity: 1 }}
             animate={{ opacity: isVisible ? 1 : 0 }}
-            transition={{ duration: 0.5 }}
+            transition={{ duration: 0.22 }}
             className="fixed inset-0 z-[9999] flex flex-col justify-end overflow-hidden bg-slate-950 p-6 font-mono text-xs text-emerald-500 md:p-12 md:text-sm"
         >
             {/* Retro CRT Scanline Effect */}

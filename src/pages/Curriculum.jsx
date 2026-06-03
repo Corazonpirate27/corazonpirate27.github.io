@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, ChevronUp, ExternalLink } from 'lucide-react';
 
-const coreCourses = [
+const courses = [
     {
         id: 'cyber', name: 'Cybersecurity Operations',
         icon: 'Shield',
@@ -438,235 +438,6 @@ const coreCourses = [
     }
 ];
 
-const globalFieldCourses = [
-    {
-        id: 'agriculture-food', name: 'Agriculture & Food Systems',
-        icon: 'Sprout',
-        track: 'Agriculture',
-        section: 'World Fields',
-        meta: { salary: '$55k - $130k', time: '8 - 18 Months', role: 'Food Systems Specialist' },
-        links: [
-            { level: 1, title: 'Sustainable Food Systems', url: 'https://www.edx.org/learn/food-systems', tag: 'edX', type: 'Premium' },
-            { level: 2, title: 'Sustainable Agriculture', url: 'https://www.coursera.org/learn/sustainable-agriculture', tag: 'Coursera', type: 'Premium' },
-            { level: 3, title: 'Food and Agriculture', url: 'https://www.fao.org/e-learning/en/', tag: 'FAO eLearning', type: 'Open Source' },
-            { level: 4, title: 'Food Security', url: 'https://www.coursera.org/learn/food-security', tag: 'Coursera', type: 'Premium' },
-            { level: 5, title: 'Land, Water, Food, and Climate', url: 'https://ocw.mit.edu/collections/environment/', tag: 'MIT OCW', type: 'Open Source' }
-        ]
-    },
-    {
-        id: 'medicine-healthcare', name: 'Medicine & Healthcare',
-        icon: 'HeartPulse',
-        track: 'Healthcare',
-        section: 'World Fields',
-        meta: { salary: '$65k - $220k', time: '12 - 36 Months', role: 'Health Systems Professional' },
-        links: [
-            { level: 1, title: 'Anatomy & Physiology', url: 'https://openstax.org/details/books/anatomy-and-physiology-2e', tag: 'OpenStax', type: 'Open Source' },
-            { level: 2, title: 'Intro to Public Health', url: 'https://www.coursera.org/learn/epidemiology', tag: 'Coursera', type: 'Premium' },
-            { level: 3, title: 'Healthcare Marketplace', url: 'https://www.coursera.org/specializations/healthcare-marketplace', tag: 'Penn', type: 'Premium' },
-            { level: 4, title: 'Global Health', url: 'https://www.edx.org/learn/global-health', tag: 'edX', type: 'Premium' },
-            { level: 5, title: 'Medical Neuroscience', url: 'https://www.coursera.org/learn/medical-neuroscience', tag: 'Duke', type: 'Premium' }
-        ]
-    },
-    {
-        id: 'energy-electrical', name: 'Energy & Electrical Systems',
-        icon: 'Zap',
-        track: 'Energy',
-        section: 'World Fields',
-        meta: { salary: '$75k - $160k', time: '10 - 24 Months', role: 'Energy Systems Engineer' },
-        links: [
-            { level: 1, title: 'Electrical Engineering', url: 'https://www.khanacademy.org/science/electrical-engineering', tag: 'Khan Academy', type: 'Open Source' },
-            { level: 2, title: 'Circuits and Electronics', url: 'https://ocw.mit.edu/courses/6-002-circuits-and-electronics-spring-2007/', tag: 'MIT OCW', type: 'Open Source' },
-            { level: 3, title: 'Energy Principles', url: 'https://ocw.mit.edu/courses/10-213-chemical-and-biological-engineering-thermodynamics-spring-2002/', tag: 'MIT OCW', type: 'Open Source' },
-            { level: 4, title: 'Solar Energy Basics', url: 'https://www.coursera.org/learn/solar-energy-basics', tag: 'Coursera', type: 'Premium' },
-            { level: 5, title: 'Power Electronics', url: 'https://www.coursera.org/specializations/power-electronics', tag: 'CU Boulder', type: 'Premium' }
-        ]
-    },
-    {
-        id: 'civil-engineering', name: 'Civil Engineering',
-        icon: 'Building2',
-        track: 'Civil Engineering',
-        section: 'World Fields',
-        meta: { salary: '$70k - $145k', time: '12 - 30 Months', role: 'Civil Engineer' },
-        links: [
-            { level: 1, title: 'Civil Engineering Materials', url: 'https://ocw.mit.edu/courses/1-050-engineering-mechanics-i-fall-2007/', tag: 'MIT OCW', type: 'Open Source' },
-            { level: 2, title: 'Engineering Mechanics', url: 'https://www.coursera.org/specializations/engineering-mechanics', tag: 'Georgia Tech', type: 'Premium' },
-            { level: 3, title: 'Structural Engineering', url: 'https://www.edx.org/learn/structural-engineering', tag: 'edX', type: 'Premium' },
-            { level: 4, title: 'Transportation Systems', url: 'https://ocw.mit.edu/search/?d=Civil%20and%20Environmental%20Engineering&q=transportation', tag: 'MIT OCW', type: 'Open Source' },
-            { level: 5, title: 'Construction Management', url: 'https://www.coursera.org/specializations/construction-management', tag: 'Columbia', type: 'Premium' }
-        ]
-    },
-    {
-        id: 'education-teaching', name: 'Education',
-        icon: 'School',
-        track: 'Education',
-        section: 'World Fields',
-        meta: { salary: '$45k - $115k', time: '6 - 18 Months', role: 'Learning Designer' },
-        links: [
-            { level: 1, title: 'Learning How to Learn', url: 'https://www.coursera.org/learn/learning-how-to-learn', tag: 'Coursera', type: 'Premium' },
-            { level: 2, title: 'Foundations of Teaching', url: 'https://www.edx.org/learn/teaching', tag: 'edX', type: 'Premium' },
-            { level: 3, title: 'Instructional Design', url: 'https://www.coursera.org/specializations/instructional-design', tag: 'UIllinois', type: 'Premium' },
-            { level: 4, title: 'Open Education Resources', url: 'https://www.oercommons.org/', tag: 'OER Commons', type: 'Open Source' },
-            { level: 5, title: 'Teach with Khan Academy', url: 'https://www.khanacademy.org/khan-for-educators', tag: 'Khan Academy', type: 'Open Source' }
-        ]
-    },
-    {
-        id: 'environmental-science', name: 'Environmental Science',
-        icon: 'Leaf',
-        track: 'Environment',
-        section: 'World Fields',
-        meta: { salary: '$55k - $125k', time: '8 - 20 Months', role: 'Environmental Analyst' },
-        links: [
-            { level: 1, title: 'AP/College Environmental Science', url: 'https://www.khanacademy.org/science/ap-college-environmental-science', tag: 'Khan Academy', type: 'Open Source' },
-            { level: 2, title: 'Environment & Sustainability', url: 'https://ocw.mit.edu/collections/environment/', tag: 'MIT OCW', type: 'Open Source' },
-            { level: 3, title: 'Ecology II: Sustainability', url: 'https://ocw.mit.edu/courses/1-020-ecology-ii-engineering-for-sustainability-spring-2008/', tag: 'MIT OCW', type: 'Open Source' },
-            { level: 4, title: 'Climate Change Courses', url: 'https://www.edx.org/learn/climate-change', tag: 'edX', type: 'Premium' },
-            { level: 5, title: 'Global Environmental Management', url: 'https://www.coursera.org/learn/global-environmental-management', tag: 'DTU', type: 'Premium' }
-        ]
-    },
-    {
-        id: 'logistics-transportation', name: 'Logistics & Transportation',
-        icon: 'Truck',
-        track: 'Logistics',
-        section: 'World Fields',
-        meta: { salary: '$60k - $140k', time: '6 - 18 Months', role: 'Supply Chain Analyst' },
-        links: [
-            { level: 1, title: 'Supply Chain Logistics', url: 'https://www.coursera.org/learn/supply-chain-logistics', tag: 'Rutgers', type: 'Premium' },
-            { level: 2, title: 'Supply Chain Management', url: 'https://www.coursera.org/specializations/supply-chain-management', tag: 'Rutgers', type: 'Premium' },
-            { level: 3, title: 'Transportation Systems', url: 'https://ocw.mit.edu/search/?q=transportation%20systems', tag: 'MIT OCW', type: 'Open Source' },
-            { level: 4, title: 'Urban Transportation Planning', url: 'https://ocw.mit.edu/search/?q=urban%20transportation', tag: 'MIT OCW', type: 'Open Source' },
-            { level: 5, title: 'Operations Management', url: 'https://www.edx.org/learn/operations-management', tag: 'edX', type: 'Premium' }
-        ]
-    },
-    {
-        id: 'scientific-research', name: 'Scientific Research',
-        icon: 'Microscope',
-        track: 'Research',
-        section: 'World Fields',
-        meta: { salary: '$60k - $150k', time: '12 - 36 Months', role: 'Research Scientist' },
-        links: [
-            { level: 1, title: 'Research Methods', url: 'https://www.coursera.org/learn/research-methods', tag: 'Coursera', type: 'Premium' },
-            { level: 2, title: 'Statistics & Probability', url: 'https://www.khanacademy.org/math/statistics-probability', tag: 'Khan Academy', type: 'Open Source' },
-            { level: 3, title: 'Scientific Computing', url: 'https://www.freecodecamp.org/learn/scientific-computing-with-python/', tag: 'freeCodeCamp', type: 'Open Source' },
-            { level: 4, title: 'Data Analysis for Research', url: 'https://www.coursera.org/learn/data-analysis-with-python', tag: 'Coursera', type: 'Premium' },
-            { level: 5, title: 'MIT Science Courses', url: 'https://ocw.mit.edu/search/?t=Science', tag: 'MIT OCW', type: 'Open Source' }
-        ]
-    },
-    {
-        id: 'governance-economics', name: 'Governance & Economics',
-        icon: 'Landmark',
-        track: 'Governance',
-        section: 'World Fields',
-        meta: { salary: '$55k - $160k', time: '8 - 24 Months', role: 'Policy Analyst' },
-        links: [
-            { level: 1, title: 'Economics', url: 'https://www.khanacademy.org/economics-finance-domain', tag: 'Khan Academy', type: 'Open Source' },
-            { level: 2, title: 'Principles of Economics', url: 'https://openstax.org/details/books/principles-economics-3e', tag: 'OpenStax', type: 'Open Source' },
-            { level: 3, title: 'Microeconomics', url: 'https://ocw.mit.edu/courses/14-01-principles-of-microeconomics-fall-2018/', tag: 'MIT OCW', type: 'Open Source' },
-            { level: 4, title: 'Public Policy', url: 'https://www.edx.org/learn/public-policy', tag: 'edX', type: 'Premium' },
-            { level: 5, title: 'Global Governance', url: 'https://www.coursera.org/learn/global-governance', tag: 'Coursera', type: 'Premium' }
-        ]
-    },
-    {
-        id: 'business-finance', name: 'Business, Finance & Management',
-        icon: 'BriefcaseBusiness',
-        track: 'Business',
-        section: 'World Fields',
-        meta: { salary: '$60k - $180k', time: '6 - 18 Months', role: 'Business Analyst' },
-        links: [
-            { level: 1, title: 'Finance and Capital Markets', url: 'https://www.khanacademy.org/economics-finance-domain/core-finance', tag: 'Khan Academy', type: 'Open Source' },
-            { level: 2, title: 'Principles of Management', url: 'https://openstax.org/details/books/principles-management', tag: 'OpenStax', type: 'Open Source' },
-            { level: 3, title: 'Financial Markets', url: 'https://www.coursera.org/learn/financial-markets-global', tag: 'Yale', type: 'Premium' },
-            { level: 4, title: 'Business Foundations', url: 'https://www.coursera.org/specializations/wharton-business-foundations', tag: 'Wharton', type: 'Premium' },
-            { level: 5, title: 'MBA Core Courses', url: 'https://ocw.mit.edu/search/?d=Sloan%20School%20of%20Management', tag: 'MIT OCW', type: 'Open Source' }
-        ]
-    }
-];
-
-const gradeMathUrl = (grade) => {
-    if (grade === 1) return 'https://www.khanacademy.org/math/cc-1st-grade-math';
-    if (grade === 2) return 'https://www.khanacademy.org/math/cc-2nd-grade-math';
-    if (grade === 3) return 'https://www.khanacademy.org/math/cc-third-grade-math';
-    if (grade === 4) return 'https://www.khanacademy.org/math/cc-fourth-grade-math';
-    if (grade === 5) return 'https://www.khanacademy.org/math/cc-fifth-grade-math';
-    if (grade === 6) return 'https://www.khanacademy.org/math/cc-sixth-grade-math';
-    if (grade === 7) return 'https://www.khanacademy.org/math/cc-seventh-grade-math';
-    if (grade === 8) return 'https://www.khanacademy.org/math/cc-eighth-grade-math';
-    if (grade === 9) return 'https://www.khanacademy.org/math/algebra';
-    if (grade === 10) return 'https://www.khanacademy.org/math/geometry';
-    if (grade === 11) return 'https://www.khanacademy.org/math/algebra2';
-    return 'https://www.khanacademy.org/math/precalculus';
-};
-
-const schoolSubjectLinks = (grade) => {
-    if (grade === 0) {
-        return [
-            { level: 1, title: 'Early Math', url: 'https://www.khanacademy.org/math/early-math', tag: 'Khan Academy', type: 'Open Source' },
-            { level: 2, title: 'Reading Readiness', url: 'https://www.khanacademy.org/ela', tag: 'Khan Academy', type: 'Open Source' },
-            { level: 3, title: 'Science Discovery', url: 'https://www.khanacademy.org/science', tag: 'Khan Academy', type: 'Open Source' },
-            { level: 4, title: 'Arts & Music', url: 'https://www.khanacademy.org/humanities', tag: 'Khan Academy', type: 'Open Source' },
-            { level: 5, title: 'Life Skills', url: 'https://www.khanacademy.org/college-careers-more', tag: 'Khan Academy', type: 'Open Source' }
-        ];
-    }
-
-    if (grade <= 5) {
-        return [
-            { level: 1, title: 'Mathematics', url: gradeMathUrl(grade), tag: 'Khan Academy', type: 'Open Source' },
-            { level: 2, title: 'English Language Arts', url: 'https://www.khanacademy.org/ela', tag: 'Khan Academy', type: 'Open Source' },
-            { level: 3, title: 'Science', url: 'https://www.khanacademy.org/science', tag: 'Khan Academy', type: 'Open Source' },
-            { level: 4, title: 'Social Studies', url: 'https://www.khanacademy.org/humanities/us-history', tag: 'Khan Academy', type: 'Open Source' },
-            { level: 5, title: 'Computer Basics', url: 'https://www.khanacademy.org/computing', tag: 'Khan Academy', type: 'Open Source' },
-            { level: 6, title: 'Arts & Humanities', url: 'https://www.khanacademy.org/humanities', tag: 'Khan Academy', type: 'Open Source' }
-        ];
-    }
-
-    if (grade <= 8) {
-        return [
-            { level: 1, title: 'Mathematics', url: gradeMathUrl(grade), tag: 'Khan Academy', type: 'Open Source' },
-            { level: 2, title: 'English Language Arts', url: 'https://www.khanacademy.org/ela', tag: 'Khan Academy', type: 'Open Source' },
-            { level: 3, title: 'Middle School Science', url: 'https://www.khanacademy.org/science/ms-science', tag: 'Khan Academy', type: 'Open Source' },
-            { level: 4, title: 'World History', url: 'https://www.khanacademy.org/humanities/world-history', tag: 'Khan Academy', type: 'Open Source' },
-            { level: 5, title: 'Computer Programming', url: 'https://www.khanacademy.org/computing/computer-programming', tag: 'Khan Academy', type: 'Open Source' },
-            { level: 6, title: 'Life Skills', url: 'https://www.khanacademy.org/college-careers-more', tag: 'Khan Academy', type: 'Open Source' }
-        ];
-    }
-
-    return [
-        { level: 1, title: 'Mathematics', url: gradeMathUrl(grade), tag: 'Khan Academy', type: 'Open Source' },
-        { level: 2, title: 'English & Literature', url: 'https://www.khanacademy.org/ela', tag: 'Khan Academy', type: 'Open Source' },
-        { level: 3, title: 'Biology', url: 'https://www.khanacademy.org/science/biology', tag: 'Khan Academy', type: 'Open Source' },
-        { level: 4, title: 'Chemistry', url: 'https://www.khanacademy.org/science/chemistry', tag: 'Khan Academy', type: 'Open Source' },
-        { level: 5, title: 'Physics', url: 'https://www.khanacademy.org/science/physics', tag: 'Khan Academy', type: 'Open Source' },
-        { level: 6, title: 'World & US History', url: 'https://www.khanacademy.org/humanities', tag: 'Khan Academy', type: 'Open Source' },
-        { level: 7, title: 'Economics', url: 'https://www.khanacademy.org/economics-finance-domain', tag: 'Khan Academy', type: 'Open Source' },
-        { level: 8, title: 'Computer Science', url: 'https://www.khanacademy.org/computing/computer-science', tag: 'Khan Academy', type: 'Open Source' },
-        { level: 9, title: 'High School Textbooks', url: 'https://openstax.org/subjects/high-school', tag: 'OpenStax', type: 'Open Source' }
-    ];
-};
-
-const schoolCourses = [
-    {
-        id: 'school-nursery', name: 'Nursery Courses',
-        icon: 'Baby',
-        track: 'Nursery',
-        section: 'School Courses',
-        meta: { salary: 'Foundation', time: 'Full Year', role: 'Nursery' },
-        links: schoolSubjectLinks(0)
-    },
-    ...Array.from({ length: 12 }, (_, index) => {
-        const grade = index + 1;
-        return {
-            id: `school-grade-${grade}`,
-            name: `Grade ${grade} Courses`,
-            icon: 'BookOpen',
-            track: `Grade ${grade}`,
-            section: 'School Courses',
-            meta: { salary: 'All Subjects', time: 'Full Year', role: `Grade ${grade}` },
-            links: schoolSubjectLinks(grade)
-        };
-    })
-];
-
-const courses = [...coreCourses, ...globalFieldCourses, ...schoolCourses];
-
 const COURSE_TRACKS = {
     cyber: 'Cybersecurity',
     data: 'Data',
@@ -689,126 +460,86 @@ const COURSE_TRACKS = {
 
 const FEATURED_COURSES = new Set(['ai', 'agents', 'mlops', 'robotics', 'privacy', 'cloud', 'cyber']);
 
-const FIELD_IMAGE_MAP = {
-    'agriculture-food': '/course-fields/agriculture-food.png',
-    'medicine-healthcare': '/course-fields/medicine-healthcare.png',
-    'energy-electrical': '/course-fields/energy-electrical.png',
-    'civil-engineering': '/course-fields/civil-engineering.png',
-    'education-teaching': '/course-fields/education-teaching.png',
-    'environmental-science': '/course-fields/environmental-science.png',
-    'logistics-transportation': '/course-fields/logistics-transportation.png',
-    'scientific-research': '/course-fields/scientific-research.png',
-    'governance-economics': '/course-fields/governance-economics.png',
-    'business-finance': '/course-fields/business-finance.png'
-};
-
-const TECH_IMAGE_MAP = {
-    cyber: '/course-tech/security.png',
-    privacy: '/course-tech/security.png',
-    data: '/course-tech/ai-data.png',
-    ai: '/course-tech/ai-data.png',
-    agents: '/course-tech/ai-data.png',
-    mlops: '/course-tech/ai-data.png',
-    fullstack: '/course-tech/software-lab.png',
-    opensource: '/course-tech/software.png',
-    cs: '/course-tech/software.png',
-    qa: '/course-tech/software-lab.png',
-    sysadmin: '/course-tech/software.png',
-    cloud: '/course-tech/cloud-devops.png',
-    devops: '/course-tech/cloud-devops.png',
-    mobile: '/course-tech/product-mobile.png',
-    web3: '/course-tech/product-mobile.png',
-    iot: '/course-tech/maker-lab.png',
-    robotics: '/course-tech/maker-lab.png',
-    xr: '/course-tech/maker-lab.png',
-    quantum: '/course-tech/maker-lab.png',
-    gamedev: '/course-tech/maker-lab.png'
-};
-
-const getCourseTrack = (course) => course.track || COURSE_TRACKS[course.id] || 'Core';
-const getCourseSection = (course) => course.section || (course.id === 'perks' ? 'Student Resources' : 'Tech Careers');
-
-const getSchoolImage = (id) => {
-    if (id === 'school-nursery') return '/course-school/nursery.png';
-    const grade = Number(id.replace('school-grade-', ''));
-    if (grade <= 5) return '/course-school/elementary.png';
-    if (grade <= 8) return '/course-school/middle.png';
-    return '/course-school/high.png';
-};
-
 // Reusable Course Card Component
 const CourseCard = ({ course }) => {
     const [expanded, setExpanded] = useState(false);
-    const track = getCourseTrack(course);
-    const section = getCourseSection(course);
+    const track = COURSE_TRACKS[course.id] || 'Core';
     const isFeatured = FEATURED_COURSES.has(course.id);
 
     // Choose image based on course type
     const getImage = (id) => {
-        if (FIELD_IMAGE_MAP[id]) return FIELD_IMAGE_MAP[id];
-        if (TECH_IMAGE_MAP[id]) return TECH_IMAGE_MAP[id];
-        if (id.startsWith('school-')) return getSchoolImage(id);
-
         switch (id) {
-            default: return '/course-tech/software.png';
+            case 'cyber': return '/matrix_pro_cyber.png'; // High-Fidelity
+            case 'data': return '/matrix_pro_data.png';   // High-Fidelity
+            case 'ai': return '/matrix_curr_ai.png';
+            case 'iot': return '/matrix_curr_iot.png';
+            case 'fullstack': return '/matrix_code_banner.png';
+            case 'devops': return '/matrix_curr_cloud.png';
+            case 'cloud': return '/matrix_curr_cloud.png';
+            case 'opensource': return '/matrix_code_banner.png';
+            case 'cs': return '/matrix_code_banner.png';
+            case 'mobile': return '/matrix_curr_mobile.png';
+            case 'web3': return '/matrix_security_banner.png';
+            case 'gamedev': return '/matrix_curr_gamedev.png';
+            case 'sysadmin': return '/matrix_security_banner.png';
+            case 'qa': return '/matrix_security_banner.png';
+            case 'agents': return '/matrix_curr_ai.png';
+            case 'mlops': return '/matrix_curr_data.png';
+            case 'robotics': return '/matrix_curr_iot.png';
+            case 'xr': return '/matrix_curr_gamedev.png';
+            case 'quantum': return '/matrix_code_banner.png';
+            case 'privacy': return '/matrix_security_banner.png';
+            default: return '/matrix_code_banner.png';
         }
     };
 
     return (
         <motion.div
             layout
-            initial={{ opacity: 0, y: 18 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="group relative overflow-hidden rounded-lg border border-black/5 bg-white text-slate-950 shadow-[0_18px_60px_rgba(15,23,42,0.12)] transition-all duration-300 dark:border-white/10 dark:bg-slate-900 dark:text-white md:hover:-translate-y-1 md:hover:shadow-[0_24px_80px_rgba(15,23,42,0.18)]"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="group relative bg-[#050505] border border-white/10 rounded-xl overflow-hidden hover:border-root-green/50 transition-all duration-300 md:hover:-translate-y-1"
         >
             {/* Image Header */}
-            <div className="relative h-48 w-full overflow-hidden bg-slate-100">
-                <img src={getImage(course.id)} alt={course.name} className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/35 via-black/0 to-white/10"></div>
-                <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between gap-3">
-                    <span className="rounded-full border border-white/35 bg-white/70 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-slate-900 shadow-sm backdrop-blur-xl">
-                        {section}
-                    </span>
-                    <span className="rounded-full border border-white/35 bg-black/25 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-white backdrop-blur-xl">
-                        {course.icon}
-                    </span>
-                </div>
+            <div className="relative h-40 w-full overflow-hidden border-b border-white/5">
+                <img src={getImage(course.id)} alt={course.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-60 group-hover:opacity-100 grayscale group-hover:grayscale-0" />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#050505] to-transparent opacity-80"></div>
+
+
             </div>
 
             <div className="p-6">
                 <div className="flex flex-wrap justify-between items-start gap-3 mb-4">
-                    <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-slate-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-300">
+                    <span className="text-[10px] uppercase tracking-widest font-bold px-3 py-1 rounded-full border border-white/10 bg-white/5 text-gray-400">
                         {course.meta.role}
                     </span>
+                    <span className="text-root-green">{course.icon}</span>
+                </div>
+
+                <div className="flex flex-wrap gap-2 mb-4">
+                    <span className="text-[10px] uppercase tracking-widest px-3 py-1 rounded-full border border-white/10 bg-white/5 text-gray-400">
+                        {track}
+                    </span>
                     {isFeatured && (
-                        <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-emerald-700 dark:border-emerald-400/25 dark:bg-emerald-400/10 dark:text-emerald-300">
-                            2026 Pick
+                        <span className="text-[10px] uppercase tracking-widest px-3 py-1 rounded-full border border-root-green/20 bg-root-green/10 text-root-green font-bold">
+                            2026 Recommended
                         </span>
                     )}
                 </div>
 
-                <div className="flex flex-wrap gap-2 mb-4">
-                    <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[10px] uppercase tracking-widest text-slate-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-300">
-                        {track}
-                    </span>
-                    <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[10px] uppercase tracking-widest text-slate-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-300">
-                        {course.links.length} Courses
-                    </span>
-                </div>
+                <h3 className="text-xl font-bold text-white mb-2 font-serif group-hover:text-root-green transition-colors">{course.name}</h3>
 
-                <h3 className="mb-2 font-serif text-2xl font-bold leading-tight text-slate-950 transition-colors group-hover:text-emerald-700 dark:text-white dark:group-hover:text-emerald-300">{course.name}</h3>
-
-                <div className="mb-6 flex flex-wrap gap-4 border-b border-slate-100 pb-6 font-mono text-xs text-slate-500 dark:border-white/10 dark:text-slate-400">
-                    <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>{course.meta.time}</span>
-                    <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-sky-500"></span>{course.meta.salary}</span>
+                <div className="flex flex-wrap gap-4 text-xs text-gray-400 font-mono mb-6 pb-6 border-b border-white/5">
+                    <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-root-green"></span>{course.meta.time}</span>
+                    <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-root-green"></span>{course.meta.salary}</span>
                 </div>
 
                 <div className="space-y-3">
                     <button
                         onClick={() => setExpanded(!expanded)}
-                        className="flex w-full items-center justify-center gap-2 rounded-lg bg-slate-950 py-3 text-xs font-black uppercase tracking-widest text-white shadow-[0_12px_30px_rgba(15,23,42,0.18)] transition-colors hover:bg-emerald-600 dark:bg-white dark:text-slate-950 dark:hover:bg-emerald-300"
+                        className="w-full bg-[#00FF41] hover:bg-white text-black font-black uppercase tracking-widest py-3 rounded text-xs transition-colors shadow-[0_0_15px_rgba(0,255,65,0.2)] hover:shadow-[0_0_20px_rgba(255,255,255,0.4)] flex items-center justify-center gap-2"
                     >
-                        {expanded ? 'Close Courses' : 'View Courses'}
+                        {expanded ? 'TERMINATE UPLINK' : 'BOOT SIMULATION'}
                         {expanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
                     </button>
 
@@ -820,20 +551,20 @@ const CourseCard = ({ course }) => {
                                 exit={{ height: 0, opacity: 0 }}
                                 className="overflow-hidden"
                             >
-                                <div className="custom-scrollbar max-h-60 space-y-2 overflow-y-auto pt-4 pr-2">
+                                <div className="pt-4 space-y-2 max-h-60 overflow-y-auto custom-scrollbar pr-2">
                                     {course.links.map((link, i) => (
                                         <a
                                             key={i}
                                             href={link.url}
                                             target="_blank"
                                             rel="noreferrer"
-                                            className="group/link block rounded-lg border border-slate-100 bg-slate-50 p-3 transition-all hover:border-emerald-200 hover:bg-emerald-50 dark:border-white/10 dark:bg-white/5 dark:hover:border-emerald-400/30 dark:hover:bg-emerald-400/10"
+                                            className="block p-3 rounded bg-white/5 hover:bg-white/10 border border-white/5 hover:border-root-green/30 transition-all group/link"
                                         >
                                             <div className="flex justify-between items-center">
-                                                <div className="text-xs font-bold text-slate-700 group-hover/link:text-slate-950 dark:text-slate-200 dark:group-hover/link:text-white">{link.title}</div>
-                                                <ExternalLink className="w-3 h-3 text-slate-400 dark:text-slate-500" />
+                                                <div className="text-xs font-bold text-gray-300 group-hover/link:text-white">{link.title}</div>
+                                                <ExternalLink className="w-3 h-3 text-gray-600" />
                                             </div>
-                                            <div className="mt-1 text-[10px] text-slate-500 dark:text-slate-400">{link.tag}</div>
+                                            <div className="text-[10px] text-gray-600 mt-1">{link.tag}</div>
                                         </a>
                                     ))}
                                 </div>
@@ -847,125 +578,62 @@ const CourseCard = ({ course }) => {
 };
 
 const Curriculum = () => {
-    const [activeSection, setActiveSection] = useState('All Sections');
     const [activeTrack, setActiveTrack] = useState('All');
     const [search, setSearch] = useState('');
 
-    const stats = [
-        { label: 'Sections', value: 4 },
-        { label: 'Tracks', value: new Set(courses.map(getCourseTrack)).size },
-        { label: 'Courses', value: courses.length }
-    ];
-    const sections = ['All Sections', ...Array.from(new Set(courses.map(getCourseSection)))];
-    const sectionCourses = courses.filter((course) => activeSection === 'All Sections' || getCourseSection(course) === activeSection);
-    const tracks = ['All', ...Array.from(new Set(sectionCourses.map(getCourseTrack)))];
+    const tracks = ['All', 'AI', 'AI Agents', 'MLOps', 'Robotics', 'Spatial Computing', 'Quantum', 'Privacy', 'Cybersecurity', 'Cloud Computing', 'Full Stack', 'DevOps', 'Data', 'Web3', 'Mobile', 'Open Source', 'Foundations'];
     const filteredCourses = courses.filter((course) => {
-        const track = getCourseTrack(course);
-        const section = getCourseSection(course);
+        const track = COURSE_TRACKS[course.id] || 'Core';
         const query = search.trim().toLowerCase();
-        const matchesSection = activeSection === 'All Sections' || section === activeSection;
         const matchesTrack = activeTrack === 'All' || track === activeTrack;
-        const searchableLinks = course.links.map((link) => `${link.title} ${link.tag}`).join(' ').toLowerCase();
-        const matchesSearch = !query || course.name.toLowerCase().includes(query) || section.toLowerCase().includes(query) || track.toLowerCase().includes(query) || course.meta.role.toLowerCase().includes(query) || searchableLinks.includes(query);
-        return matchesSection && matchesTrack && matchesSearch;
+        const matchesSearch = !query || course.name.toLowerCase().includes(query) || track.toLowerCase().includes(query) || course.meta.role.toLowerCase().includes(query);
+        return matchesTrack && matchesSearch;
     });
 
     return (
-        <div className="relative isolate overflow-hidden bg-white/35 text-slate-950 dark:bg-slate-950/40 dark:text-white">
-            <div className="absolute inset-0 -z-10 bg-[linear-gradient(180deg,rgba(255,255,255,0.7)_0%,rgba(245,247,250,0.56)_52%,rgba(238,242,247,0.72)_100%)] dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.65)_0%,rgba(15,23,42,0.72)_100%)]"></div>
-
-            <section className="mx-auto grid max-w-7xl gap-10 px-4 pb-10 pt-16 lg:grid-cols-[minmax(0,1fr)_420px] lg:items-end">
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5 }}
-                    className="max-w-4xl"
-                >
-                    <span className="mb-5 inline-flex rounded-full border border-slate-200 bg-white/70 px-4 py-2 text-xs font-bold uppercase tracking-widest text-slate-600 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-white/10 dark:text-slate-200">
-                        ROOT Academy 2026
-                    </span>
-                    <h2 className="font-serif text-5xl font-bold leading-[0.95] tracking-normal text-slate-950 dark:text-white sm:text-7xl lg:text-8xl">
-                        Courses for every serious path.
-                    </h2>
-                    <p className="mt-6 max-w-2xl text-lg leading-relaxed text-slate-600 dark:text-slate-300 sm:text-xl">
-                        Tech careers, world fields, school subjects from Nursery to Grade 12, and student resources in one clean learning catalog.
+        <div className="max-w-7xl mx-auto px-4 py-12">
+            <div className="mb-10 space-y-6">
+                <div className="max-w-3xl">
+                    <h2 className="text-5xl font-serif font-bold text-white mb-4">Course Module 2026</h2>
+                    <p className="text-gray-400 text-lg leading-relaxed">
+                        Explore the redesigned flagship track for modern tech careers. Filter by learning path, search for the next mission, and launch the 2026-certified course roadmap.
                     </p>
-                </motion.div>
+                </div>
 
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.1, duration: 0.5 }}
-                    className="grid grid-cols-3 overflow-hidden rounded-lg border border-white/70 bg-white/65 shadow-[0_24px_80px_rgba(15,23,42,0.12)] backdrop-blur-2xl dark:border-white/10 dark:bg-slate-900/70"
-                >
-                    {stats.map((stat) => (
-                        <div key={stat.label} className="border-r border-slate-200/80 p-5 last:border-r-0 dark:border-white/10">
-                            <div className="font-serif text-3xl font-bold text-slate-950 dark:text-white">{stat.value}</div>
-                            <div className="mt-1 text-[10px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">{stat.label}</div>
-                        </div>
-                    ))}
-                </motion.div>
-            </section>
-
-            <div className="sticky top-16 z-30 border-y border-white/60 bg-white/75 backdrop-blur-2xl dark:border-white/10 dark:bg-slate-950/75">
-                <div className="mx-auto max-w-7xl space-y-4 px-4 py-4">
+                <div className="grid gap-4 md:grid-cols-2 items-center">
+                    <div className="relative rounded-xl border border-white/10 bg-[#050505] p-4">
+                        <input
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            placeholder="Search courses, tracks, roles..."
+                            className="w-full bg-transparent border border-white/10 rounded-lg px-4 py-3 text-sm text-white placeholder:text-gray-500 focus:border-root-green focus:outline-none"
+                        />
+                    </div>
                     <div className="flex flex-wrap gap-2">
-                        {sections.map((section) => (
+                        {tracks.map((track) => (
                             <button
-                                key={section}
-                                onClick={() => {
-                                    setActiveSection(section);
-                                    setActiveTrack('All');
-                                }}
-                                className={`rounded-full border px-4 py-2 text-xs font-bold uppercase tracking-widest transition-all ${activeSection === section ? 'border-slate-950 bg-slate-950 text-white shadow-[0_10px_30px_rgba(15,23,42,0.18)] dark:border-white dark:bg-white dark:text-slate-950' : 'border-slate-200 bg-white/80 text-slate-600 hover:border-slate-400 hover:text-slate-950 dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:border-white/30 dark:hover:text-white'}`}
+                                key={track}
+                                onClick={() => setActiveTrack(track)}
+                                className={`px-4 py-2 text-xs uppercase tracking-widest rounded-full transition-all ${activeTrack === track ? 'bg-root-green text-black border border-root-green' : 'bg-white/5 text-gray-300 border border-white/10 hover:bg-white/10'}`}
                             >
-                                {section}
+                                {track}
                             </button>
                         ))}
                     </div>
-
-                    <div className="grid gap-4 md:grid-cols-[minmax(260px,0.78fr)_1.22fr] md:items-start">
-                        <div className="relative rounded-lg border border-slate-200 bg-white shadow-sm dark:border-white/10 dark:bg-white/5">
-                            <input
-                                value={search}
-                                onChange={(e) => setSearch(e.target.value)}
-                                placeholder="Search courses, subjects, tracks, roles..."
-                                className="w-full rounded-lg bg-transparent px-4 py-3 text-sm text-slate-950 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-400 dark:text-white dark:placeholder:text-slate-500"
-                            />
-                        </div>
-                        <div className="flex max-h-28 flex-wrap gap-2 overflow-y-auto pr-1">
-                            {tracks.map((track) => (
-                                <button
-                                    key={track}
-                                    onClick={() => setActiveTrack(track)}
-                                    className={`rounded-full border px-4 py-2 text-xs font-bold uppercase tracking-widest transition-all ${activeTrack === track ? 'border-emerald-500 bg-emerald-500 text-white shadow-[0_10px_30px_rgba(16,185,129,0.24)] dark:border-emerald-300 dark:bg-emerald-300 dark:text-slate-950' : 'border-slate-200 bg-white/70 text-slate-600 hover:border-emerald-300 hover:text-slate-950 dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:border-emerald-300/50 dark:hover:text-white'}`}
-                                >
-                                    {track}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
                 </div>
             </div>
 
-            <div className="mx-auto max-w-7xl px-4 py-10">
-                <div className="mb-6 flex items-center justify-between gap-4 text-xs font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">
-                    <span>{filteredCourses.length} visible</span>
-                    <span>{activeSection}</span>
-                </div>
-
-                <motion.div layout className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-                    {filteredCourses.map((course) => (
-                        <CourseCard key={course.id} course={course} />
-                    ))}
-                </motion.div>
-
-                {filteredCourses.length === 0 && (
-                    <div className="mt-12 rounded-lg border border-slate-200 bg-white p-12 text-center text-slate-500 shadow-sm dark:border-white/10 dark:bg-slate-900 dark:text-slate-300">
-                        No matching courses found. Try broadening your search or selecting a different section.
-                    </div>
-                )}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {filteredCourses.map((course) => (
+                    <CourseCard key={course.id} course={course} />
+                ))}
             </div>
+
+            {filteredCourses.length === 0 && (
+                <div className="mt-12 rounded-3xl border border-white/10 bg-[#050505] p-12 text-center text-gray-400">
+                    No matching tracks found. Try broadening your search or selecting a different learning path.
+                </div>
+            )}
         </div>
     );
 };

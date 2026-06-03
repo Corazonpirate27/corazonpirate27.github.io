@@ -151,11 +151,11 @@ const News = () => {
 
     return (
         <div className="mx-auto max-w-7xl px-4 py-10 md:py-12">
-            <section className="mb-8 flex flex-col gap-5 border-b border-slate-200 pb-8 dark:border-white/10 md:flex-row md:items-end md:justify-between">
+            <section className="mb-8 flex flex-col gap-5 border-b border-white/10 pb-8 md:flex-row md:items-end md:justify-between">
                 <div className="max-w-2xl">
-                    <p className="mb-3 font-mono text-[10px] uppercase tracking-widest text-emerald-600 dark:text-emerald-300">Learning News Desk</p>
-                    <h2 className="mb-3 font-serif text-3xl font-bold text-slate-950 dark:text-white md:text-5xl">Technology News</h2>
-                    <p className="text-sm leading-6 text-slate-600 dark:text-slate-300 md:text-base">{sourceDescription}</p>
+                    <p className="mb-3 font-mono text-[10px] uppercase tracking-widest text-root-green">Open Source API Desk</p>
+                    <h2 className="mb-3 font-serif text-3xl font-bold text-white md:text-5xl">Tech News</h2>
+                    <p className="text-sm leading-6 text-gray-400 md:text-base">{sourceDescription}</p>
                 </div>
 
                 <div className="flex flex-wrap gap-2">
@@ -166,8 +166,8 @@ const News = () => {
                             onClick={() => fetchNews(feed.id)}
                             className={`rounded-md border px-4 py-2 text-xs uppercase tracking-widest transition-colors ${
                                 source === feed.id
-                                    ? 'border-emerald-500 bg-emerald-500 text-white dark:border-emerald-300 dark:bg-emerald-300 dark:text-slate-950'
-                                    : 'border-slate-200 bg-white/70 text-slate-600 hover:border-emerald-300 hover:text-slate-950 dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:border-white/25 dark:hover:bg-white/10'
+                                    ? 'border-root-green bg-root-green text-black'
+                                    : 'border-white/10 bg-white/[0.03] text-gray-300 hover:border-white/25 hover:bg-white/10'
                             }`}
                         >
                             {feed.label}
@@ -176,7 +176,7 @@ const News = () => {
                     <button
                         type="button"
                         onClick={() => fetchNews(source)}
-                        className="rounded-md border border-slate-200 bg-white/70 px-4 py-2 text-xs uppercase tracking-widest text-slate-600 transition-colors hover:bg-slate-950 hover:text-white dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:bg-white/10"
+                        className="rounded-md border border-white/10 bg-white/[0.03] px-4 py-2 text-xs uppercase tracking-widest text-gray-300 transition-colors hover:bg-white/10"
                     >
                         <RefreshCw className={`mr-2 inline-block h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
                         Refresh
@@ -185,7 +185,7 @@ const News = () => {
             </section>
 
             {error && (
-                <div className="mb-6 rounded-md border border-amber-400/25 bg-amber-100 p-4 text-sm text-amber-800 dark:bg-amber-400/10 dark:text-amber-100">
+                <div className="mb-6 rounded-md border border-amber-400/20 bg-amber-400/10 p-4 text-sm text-amber-100">
                     {error}
                 </div>
             )}
@@ -193,7 +193,7 @@ const News = () => {
             {loading ? (
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
                     {[1, 2, 3, 4, 5, 6].map((item) => (
-                        <div key={item} className="h-44 animate-pulse rounded-md border border-slate-200 bg-white/70 dark:border-white/10 dark:bg-white/5" />
+                        <div key={item} className="h-44 animate-pulse rounded-md border border-white/5 bg-white/[0.04]" />
                     ))}
                 </div>
             ) : (
@@ -207,26 +207,26 @@ const News = () => {
                             initial={{ opacity: 0, y: 12 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: Math.min(index * 0.03, 0.24) }}
-                            className="group relative flex min-h-52 flex-col rounded-lg border border-white/70 bg-white/75 p-5 shadow-sm backdrop-blur-xl transition-colors hover:border-emerald-300 hover:bg-emerald-50/70 dark:border-white/10 dark:bg-slate-900/80 dark:hover:border-emerald-300/40 dark:hover:bg-emerald-400/10"
+                            className="group relative flex min-h-52 flex-col rounded-md border border-white/10 bg-[#080808]/95 p-5 transition-colors hover:border-root-green/50 hover:bg-white/[0.04]"
                         >
                             <div className="mb-4 flex flex-wrap items-center gap-2 pr-8">
-                                <span className="rounded border border-slate-200 bg-white px-2.5 py-1 text-[10px] uppercase tracking-widest text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-slate-300">
+                                <span className="rounded border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[10px] uppercase tracking-widest text-gray-300">
                                     {story.source}
                                 </span>
-                                <span className="rounded border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[10px] uppercase tracking-widest text-emerald-700 dark:border-emerald-400/20 dark:bg-emerald-400/10 dark:text-emerald-300">
+                                <span className="rounded border border-root-green/20 bg-root-green/10 px-2.5 py-1 text-[10px] uppercase tracking-widest text-root-green">
                                     {story.badge}
                                 </span>
                             </div>
 
-                            <h3 className="mb-3 line-clamp-2 text-lg font-bold leading-snug text-slate-950 transition-colors group-hover:text-emerald-700 dark:text-white dark:group-hover:text-emerald-300">
+                            <h3 className="mb-3 line-clamp-2 text-lg font-bold leading-snug text-white transition-colors group-hover:text-root-green">
                                 {story.title}
                             </h3>
 
                             {story.description && (
-                                <p className="mb-4 line-clamp-2 text-sm leading-6 text-slate-500 dark:text-slate-400">{story.description}</p>
+                                <p className="mb-4 line-clamp-2 text-sm leading-6 text-gray-500">{story.description}</p>
                             )}
 
-                            <div className="mt-auto grid gap-2 text-xs text-slate-500 dark:text-slate-400">
+                            <div className="mt-auto grid gap-2 text-xs text-gray-500">
                                 <div className="flex items-center gap-2">
                                     <Clock className="h-3.5 w-3.5" />
                                     {story.date}
@@ -234,7 +234,7 @@ const News = () => {
                                 <div className="flex items-center gap-2">
                                     <GitFork className="h-3.5 w-3.5" />
                                     <span className="font-mono">@{story.author}</span>
-                                    <span className="truncate rounded border border-slate-200 bg-white px-2 py-1 dark:border-white/10 dark:bg-white/5">{story.hostname}</span>
+                                    <span className="truncate rounded border border-white/10 bg-white/[0.03] px-2 py-1">{story.hostname}</span>
                                 </div>
                                 <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest">
                                     {story.source === 'GitHub' ? <Star className="h-3.5 w-3.5" /> : <ThumbsUp className="h-3.5 w-3.5" />}
@@ -242,7 +242,7 @@ const News = () => {
                                 </div>
                             </div>
 
-                            <ExternalLink className="absolute right-5 top-5 h-5 w-5 text-slate-400 transition-colors group-hover:text-emerald-700 dark:text-slate-500 dark:group-hover:text-emerald-300" />
+                            <ExternalLink className="absolute right-5 top-5 h-5 w-5 text-gray-600 transition-colors group-hover:text-root-green" />
                         </motion.a>
                     ))}
                 </div>
