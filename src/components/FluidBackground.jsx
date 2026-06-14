@@ -6,8 +6,8 @@ const getMotionProfile = () => {
     const smallViewport = window.innerWidth < 768;
 
     if (reducedMotion) return { fps: 0, pixelRatio: 1, fieldScale: 0.86 };
-    if (coarsePointer || smallViewport) return { fps: 12, pixelRatio: 1, fieldScale: 0.82 };
-    return { fps: 18, pixelRatio: 1.1, fieldScale: 1 };
+    if (coarsePointer || smallViewport) return { fps: 14, pixelRatio: 1, fieldScale: 0.82 };
+    return { fps: 30, pixelRatio: 1.1, fieldScale: 1 };
 };
 
 const FluidBackground = () => {
@@ -98,8 +98,85 @@ const FluidBackground = () => {
             ctx.restore();
         };
 
+        // Floating education glyphs: math, science, and code symbols drifting upward.
+        const GLYPHS = ['π', 'Σ', '∞', '√', 'ƒ(x)', '∆', 'λ', '</>', '{ }', '∫', '101', 'E=mc²', 'a²+b²', 'H₂O', '×÷', 'A+'];
+
+        const drawGlyphs = (isDark) => {
+            ctx.save();
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            const count = width < 768 ? 9 : 16;
+            for (let i = 0; i < count; i += 1) {
+                const seed = i * 53.71;
+                const speed = 0.018 + (i % 5) * 0.007;
+                const baseX = (Math.sin(seed) * 0.5 + 0.5) * width;
+                const x = baseX + Math.sin(time * 1.4 + i) * 26;
+                const y = height - (((time * speed * height) + (Math.cos(seed) * 0.5 + 0.5) * height) % (height * 1.2)) + height * 0.1;
+                const size = 13 + (i % 4) * 5;
+                const fade = Math.sin((y / height) * Math.PI); // fade near top and bottom edges
+
+                ctx.font = `${size}px "JetBrains Mono", monospace`;
+                ctx.fillStyle = isDark
+                    ? `rgba(94,234,212,${0.05 + fade * 0.09})`
+                    : `rgba(5,150,105,${0.06 + fade * 0.1})`;
+                ctx.fillText(GLYPHS[i % GLYPHS.length], x, y);
+            }
+
+            ctx.restore();
+        };
+
+        // Knowledge network: slow-moving nodes joined by lines when close,
+        // like a constellation of connected ideas.
+        const drawNetwork = (isDark) => {
+            const count = width < 768 ? 10 : 18;
+            const nodes = [];
+
+            for (let i = 0; i < count; i += 1) {
+                const seed = i * 41.37;
+                nodes.push({
+                    x: (Math.sin(seed) * 0.5 + 0.5) * width + Math.sin(time * 0.6 + i * 1.7) * width * 0.06,
+                    y: (Math.cos(seed * 1.3) * 0.5 + 0.5) * height + Math.cos(time * 0.5 + i * 1.1) * height * 0.06,
+                    pulse: Math.sin(time * 2.2 + i) * 0.5 + 0.5
+                });
+            }
+
+            ctx.save();
+            const linkDistance = Math.min(width, height) * 0.22;
+
+            for (let i = 0; i < count; i += 1) {
+                for (let j = i + 1; j < count; j += 1) {
+                    const dx = nodes[i].x - nodes[j].x;
+                    const dy = nodes[i].y - nodes[j].y;
+                    const distance = Math.hypot(dx, dy);
+                    if (distance > linkDistance) continue;
+
+                    const strength = 1 - distance / linkDistance;
+                    ctx.strokeStyle = isDark
+                        ? `rgba(45,212,191,${strength * 0.14})`
+                        : `rgba(13,148,136,${strength * 0.18})`;
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    ctx.moveTo(nodes[i].x, nodes[i].y);
+                    ctx.lineTo(nodes[j].x, nodes[j].y);
+                    ctx.stroke();
+                }
+            }
+
+            for (const node of nodes) {
+                ctx.beginPath();
+                ctx.fillStyle = isDark
+                    ? `rgba(94,234,212,${0.18 + node.pulse * 0.16})`
+                    : `rgba(5,150,105,${0.22 + node.pulse * 0.18})`;
+                ctx.arc(node.x, node.y, 1.6 + node.pulse * 1.6, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            ctx.restore();
+        };
+
         const drawParticles = (isDark) => {
-            if (profile.fps < 25) return;
+            if (profile.fps < 12) return;
 
             ctx.save();
             ctx.globalCompositeOperation = isDark ? 'screen' : 'multiply';
@@ -155,6 +232,7 @@ const FluidBackground = () => {
                 ctx.fillRect(0, 0, width, height);
                 drawSweep(isDark);
                 drawRibbon(0.34, isDark ? 'rgba(45,212,191,0.1)' : 'rgba(14,165,233,0.22)', 0.8, isDark);
+                drawNetwork(isDark);
                 return;
             }
 
@@ -208,6 +286,8 @@ const FluidBackground = () => {
             drawRibbon(0.28, isDark ? 'rgba(45,212,191,0.16)' : 'rgba(14,165,233,0.28)', 1.1, isDark);
             drawRibbon(0.58, isDark ? 'rgba(52,211,153,0.12)' : 'rgba(16,185,129,0.24)', 0.9, isDark);
             drawRibbon(0.78, isDark ? 'rgba(147,197,253,0.1)' : 'rgba(99,102,241,0.18)', 0.68, isDark);
+            drawNetwork(isDark);
+            drawGlyphs(isDark);
             drawParticles(isDark);
             drawMicroTexture(isDark);
 

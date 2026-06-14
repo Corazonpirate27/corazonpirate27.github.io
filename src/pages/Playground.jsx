@@ -1,6 +1,6 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import Editor from '@monaco-editor/react';
-import { BookOpen, Boxes, Code2, Copy, FileCode2, Folder, Play, RotateCcw, SplitSquareVertical, Terminal, Trash2 } from 'lucide-react';
+import { BookOpen, Boxes, Code2, Copy, FileCode2, Folder, Loader2, Play, RotateCcw, SplitSquareVertical, Terminal, Trash2 } from 'lucide-react';
 
 const languageLabs = {
     javascript: {
@@ -9,7 +9,8 @@ const languageLabs = {
         monaco: 'javascript',
         runnable: true,
         runnerId: 102,
-        runnerName: 'Node.js 22',
+        piston: 'javascript',
+        runnerName: 'Browser JS engine',
         libraries: ['DOM', 'Fetch', 'Math', 'Date', 'Array', 'JSON'],
         files: ['main.js', 'notes.md'],
         code: `const students = ['Asha', 'Milan', 'Nora'];
@@ -32,7 +33,8 @@ console.log('Average:', scores.reduce((sum, item) => sum + item.score, 0) / scor
         monaco: 'python',
         runnable: true,
         runnerId: 109,
-        runnerName: 'Python 3.13',
+        piston: 'python',
+        runnerName: 'Python 3',
         libraries: ['math', 'statistics', 'random', 'json', 'datetime', 'collections'],
         files: ['main.py', 'requirements.txt'],
         code: `from statistics import mean
@@ -55,7 +57,8 @@ print("Average:", mean(scores.values()))
         monaco: 'java',
         runnable: true,
         runnerId: 91,
-        runnerName: 'JDK 17',
+        piston: 'java',
+        runnerName: 'Java (JDK 15)',
         libraries: ['java.util', 'java.io', 'java.time', 'java.math', 'Collections', 'Streams'],
         files: ['Main.java', 'README.md'],
         code: `import java.util.List;
@@ -80,7 +83,8 @@ public class Main {
         monaco: 'c',
         runnable: true,
         runnerId: 103,
-        runnerName: 'GCC 14',
+        piston: 'c',
+        runnerName: 'GCC',
         libraries: ['stdio.h', 'stdlib.h', 'string.h', 'math.h', 'ctype.h', 'time.h'],
         files: ['main.c', 'Makefile'],
         code: `#include <stdio.h>
@@ -106,7 +110,8 @@ int main(void) {
         monaco: 'cpp',
         runnable: true,
         runnerId: 105,
-        runnerName: 'G++ 14',
+        piston: 'c++',
+        runnerName: 'G++',
         libraries: ['iostream', 'vector', 'algorithm', 'string', 'map', 'numeric'],
         files: ['main.cpp', 'CMakeLists.txt'],
         code: `#include <iostream>
@@ -164,6 +169,7 @@ int main() {
         monaco: 'sql',
         runnable: true,
         runnerId: 82,
+        piston: 'sqlite3',
         runnerName: 'SQLite',
         libraries: ['SELECT', 'JOIN', 'GROUP BY', 'ORDER BY', 'COUNT', 'AVG'],
         files: ['queries.sql', 'schema.sql'],
@@ -187,6 +193,29 @@ ORDER BY score DESC;
 };
 
 const JUDGE0_ENDPOINT = 'https://ce.judge0.com/submissions?base64_encoded=false&wait=true';
+const PISTON_ENDPOINT = 'https://emkc.org/api/v2/piston/execute';
+const JS_TIMEOUT_MS = 5000;
+const CODE_STORAGE_KEY = 'root_playground_code_v1';
+const LANG_STORAGE_KEY = 'root_playground_lang_v1';
+
+// Saved student code merged over the default starter snippets.
+const loadInitialCode = () => {
+    const defaults = Object.fromEntries(Object.entries(languageLabs).map(([id, lab]) => [id, lab.code]));
+    try {
+        const saved = JSON.parse(window.localStorage.getItem(CODE_STORAGE_KEY) || '{}');
+        for (const id of Object.keys(defaults)) {
+            if (typeof saved[id] === 'string') defaults[id] = saved[id];
+        }
+    } catch {
+        /* ignore malformed storage */
+    }
+    return defaults;
+};
+
+const loadInitialLanguage = () => {
+    const saved = window.localStorage.getItem(LANG_STORAGE_KEY);
+    return saved && languageLabs[saved] ? saved : 'javascript';
+};
 
 const splitOutput = (value, type = 'log') => {
     if (!value) return [];
@@ -197,17 +226,82 @@ const splitOutput = (value, type = 'log') => {
         .map((message) => ({ type, message }));
 };
 
+// Runs JavaScript locally in a sandboxed Web Worker, so the JS lab works
+// instantly and offline. Console output is forwarded back via postMessage.
+const runJavaScriptLocally = (source) => new Promise((resolve) => {
+    const harness = `
+        const __logs = [];
+        const __push = (type) => (...args) => __logs.push({ type, parts: args.map((value) => {
+            if (typeof value === 'string') return value;
+            if (value instanceof Error) return value.name + ': ' + value.message;
+            try { return JSON.stringify(value); } catch { return String(value); }
+        }) });
+        console.log = __push('log');
+        console.info = __push('log');
+        console.warn = __push('log');
+        console.error = __push('error');
+        try {
+            const __result = eval(${JSON.stringify(source)});
+            Promise.resolve(__result).finally(() => self.postMessage({ logs: __logs }));
+        } catch (error) {
+            __logs.push({ type: 'error', parts: [(error && error.name ? error.name + ': ' + error.message : String(error))] });
+            self.postMessage({ logs: __logs });
+        }
+    `;
+    const blobUrl = URL.createObjectURL(new Blob([harness], { type: 'text/javascript' }));
+    const worker = new Worker(blobUrl);
+
+    const finish = (lines) => {
+        worker.terminate();
+        URL.revokeObjectURL(blobUrl);
+        resolve(lines);
+    };
+
+    const timeoutId = setTimeout(() => {
+        finish([{ type: 'error', message: `Execution stopped after ${JS_TIMEOUT_MS / 1000}s (infinite loop?).` }]);
+    }, JS_TIMEOUT_MS);
+
+    worker.onmessage = (event) => {
+        clearTimeout(timeoutId);
+        const lines = (event.data.logs || []).map(({ type, parts }) => ({ type, message: parts.join(' ') }));
+        finish(lines);
+    };
+    worker.onerror = (event) => {
+        clearTimeout(timeoutId);
+        finish([{ type: 'error', message: event.message || 'Script error.' }]);
+    };
+});
+
 const Playground = () => {
-    const [languageId, setLanguageId] = useState('javascript');
-    const [codeByLanguage, setCodeByLanguage] = useState(() => (
-        Object.fromEntries(Object.entries(languageLabs).map(([id, lab]) => [id, lab.code]))
-    ));
+    const [languageId, setLanguageId] = useState(loadInitialLanguage);
+    const [codeByLanguage, setCodeByLanguage] = useState(loadInitialCode);
     const [output, setOutput] = useState([{ type: 'status', message: 'Ready.' }]);
     const [activePanel, setActivePanel] = useState('terminal');
     const [stdin, setStdin] = useState('');
     const [terminalCommand, setTerminalCommand] = useState('');
     const [isRunning, setIsRunning] = useState(false);
     const previewRef = useRef(null);
+
+    // Persist student work so a refresh never loses it (debounced to avoid
+    // writing on every keystroke).
+    useEffect(() => {
+        const timeoutId = window.setTimeout(() => {
+            try {
+                window.localStorage.setItem(CODE_STORAGE_KEY, JSON.stringify(codeByLanguage));
+            } catch {
+                /* storage blocked — editing still works in-memory */
+            }
+        }, 400);
+        return () => window.clearTimeout(timeoutId);
+    }, [codeByLanguage]);
+
+    useEffect(() => {
+        try {
+            window.localStorage.setItem(LANG_STORAGE_KEY, languageId);
+        } catch {
+            /* ignore */
+        }
+    }, [languageId]);
 
     const lab = languageLabs[languageId];
     const code = codeByLanguage[languageId];
@@ -263,6 +357,54 @@ const Playground = () => {
         setIsRunning(true);
 
         try {
+            if (languageId === 'javascript') {
+                const lines = await runJavaScriptLocally(code);
+                setOutput([
+                    { type: 'status', message: 'Browser JS engine finished.' },
+                    ...(lines.length ? lines : [{ type: 'status', message: 'Finished with no output.' }])
+                ]);
+                return;
+            }
+
+            const nextOutput = await runRemoteCode();
+            setOutput(nextOutput.length ? nextOutput : [{ type: 'status', message: 'Finished with no output.' }]);
+        } catch (error) {
+            setOutput([
+                { type: 'error', message: error.message || 'Unable to run code.' },
+                { type: 'status', message: 'Check your connection and try again.' }
+            ]);
+        } finally {
+            setIsRunning(false);
+        }
+    };
+
+    // Remote execution: Piston (free, no key) first, Judge0 CE as fallback.
+    const runRemoteCode = async () => {
+        try {
+            const response = await fetch(PISTON_ENDPOINT, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    language: lab.piston,
+                    version: '*',
+                    files: [{ name: languageId === 'java' ? 'Main.java' : fileName, content: code }],
+                    stdin
+                })
+            });
+
+            const result = await response.json();
+            if (!response.ok) {
+                throw new Error(result?.message || 'Piston runner request failed.');
+            }
+
+            const failed = (result.compile?.code ?? 0) !== 0 || (result.run?.code ?? 0) !== 0;
+            return [
+                { type: 'status', message: `${lab.runnerName} finished: ${failed ? 'Error' : 'OK'}` },
+                ...splitOutput(result.compile?.stderr, 'error'),
+                ...splitOutput(result.run?.stderr, 'error'),
+                ...splitOutput(result.run?.stdout, 'log')
+            ];
+        } catch {
             const response = await fetch(JUDGE0_ENDPOINT, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -277,13 +419,12 @@ const Playground = () => {
             });
 
             const result = await response.json();
-
             if (!response.ok) {
                 throw new Error(result?.message || 'Runner request failed.');
             }
 
             const nextOutput = [
-                { type: 'status', message: `${lab.runnerName} finished: ${result.status?.description || 'Done'}` },
+                { type: 'status', message: `Judge0 finished: ${result.status?.description || 'Done'}` },
                 ...splitOutput(result.compile_output, 'error'),
                 ...splitOutput(result.stderr, 'error'),
                 ...splitOutput(result.stdout, 'log'),
@@ -294,14 +435,7 @@ const Playground = () => {
                 nextOutput.push({ type: 'status', message: `time ${result.time}s / memory ${result.memory || 0} KB` });
             }
 
-            setOutput(nextOutput.length ? nextOutput : [{ type: 'status', message: 'Finished with no output.' }]);
-        } catch (error) {
-            setOutput([
-                { type: 'error', message: error.message || 'Unable to run code.' },
-                { type: 'status', message: 'Check your connection and try again.' }
-            ]);
-        } finally {
-            setIsRunning(false);
+            return nextOutput;
         }
     };
 
@@ -437,7 +571,7 @@ const Playground = () => {
                                 disabled={isRunning}
                                 className="ml-1 flex h-8 items-center gap-2 rounded-md bg-emerald-500 px-3 text-xs font-bold uppercase tracking-widest text-slate-950 hover:bg-emerald-300 disabled:cursor-not-allowed disabled:opacity-60"
                             >
-                                <Play className="h-4 w-4" />
+                                {isRunning ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
                                 {isRunning ? 'Running' : 'Run'}
                             </button>
                         </div>
@@ -489,6 +623,12 @@ const Playground = () => {
                                                 {lab.runnerName || 'Browser'} / {fileName}
                                             </div>
                                             <div className="min-h-0 flex-1 overflow-auto p-3 font-mono text-sm">
+                                                {isRunning && (
+                                                    <div className="mb-2 flex items-center gap-2 text-amber-300">
+                                                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                                        Executing {fileName} on {lab.runnerName}...
+                                                    </div>
+                                                )}
                                                 {output.length === 0 ? (
                                                     <p className="text-slate-600">Ready.</p>
                                                 ) : output.map((item, index) => (
@@ -530,7 +670,7 @@ const Playground = () => {
 
                                 {activePanel === 'preview' && (
                                     <div className="h-full overflow-hidden rounded-md border border-white/10 bg-white">
-                                        <iframe ref={previewRef} title="Lab preview" className="h-full w-full" sandbox="allow-scripts allow-same-origin" />
+                                        <iframe ref={previewRef} title="Lab preview" className="h-full w-full" sandbox="allow-scripts" />
                                     </div>
                                 )}
 

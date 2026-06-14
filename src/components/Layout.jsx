@@ -122,12 +122,13 @@ const Layout = ({ children }) => {
     return (
         <div className="relative isolate flex min-h-screen flex-col bg-transparent text-slate-900 selection:bg-emerald-300/40 selection:text-slate-950 dark:text-slate-100 dark:selection:bg-emerald-400/30 dark:selection:text-white">
             <FluidBackground />
+            <div className="grain-overlay" aria-hidden="true" />
 
             <nav className="fixed inset-x-0 top-0 z-50 border-b border-black/10 bg-white/80 backdrop-blur-2xl supports-[backdrop-filter]:bg-white/65 dark:border-white/10 dark:bg-slate-950/80 dark:supports-[backdrop-filter]:bg-slate-950/65">
                 <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-5">
                     <Link to="/" className="group flex shrink-0 items-center gap-3">
-                        <span className="relative flex h-11 w-11 items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 shadow-sm dark:border-emerald-400/25 dark:bg-emerald-400/10">
-                            <BookOpen className="h-[22px] w-[22px] text-emerald-600 dark:text-emerald-300" />
+                        <span className="relative flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 via-teal-500 to-sky-500 shadow-glow transition-transform duration-300 group-hover:scale-105 group-hover:rotate-3">
+                            <BookOpen className="h-[22px] w-[22px] text-white" />
                         </span>
                         <span className="hidden font-serif text-lg font-bold tracking-widest text-slate-950 dark:text-white sm:block">
                             ROOT<span className="font-normal text-slate-500 dark:text-slate-400">.ACADEMY</span>
@@ -171,6 +172,7 @@ const Layout = ({ children }) => {
                         </button>
                     </div>
                 </div>
+                <div className="h-px w-full bg-gradient-to-r from-transparent via-emerald-400/60 to-transparent" aria-hidden="true" />
             </nav>
 
             <button
@@ -271,8 +273,9 @@ const Layout = ({ children }) => {
             </main>
 
             <footer className="relative z-10 mt-auto border-t border-black/10 bg-white/75 py-6 backdrop-blur-2xl dark:border-white/10 dark:bg-slate-950/75">
+                <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-400/60 to-transparent" aria-hidden="true" />
                 <div className={`mx-auto flex max-w-7xl flex-col gap-2 px-5 text-[10px] uppercase tracking-widest text-slate-500 transition-[padding] duration-300 dark:text-slate-400 sm:flex-row sm:items-center sm:justify-between ${isSidebarOpen ? 'lg:pl-72' : 'lg:pl-5'}`}>
-                    <span>ROOT Academy 2026</span>
+                    <span className="text-gradient font-bold">ROOT ACADEMY</span>
                     <span>Courses // AI guidance // Practice lab</span>
                 </div>
             </footer>

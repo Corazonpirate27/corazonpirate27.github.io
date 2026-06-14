@@ -1,5 +1,6 @@
 import React, { Suspense, lazy, useCallback, useEffect, useState } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
+import { AnimatePresence, MotionConfig, motion } from 'framer-motion';
 import Layout from './components/Layout';
 import BootSequence from './components/BootSequence';
 
@@ -36,24 +37,34 @@ export default function App() {
     }, []);
 
     return (
-        <>
+        <MotionConfig reducedMotion="user">
             {!booted && <BootSequence onComplete={handleBootComplete} />}
             {booted && (
                 <Layout>
                     <Suspense fallback={<RouteFallback />}>
-                        <Routes location={location} key={location.pathname}>
-                            <Route path="/" element={<Home />} />
-                            <Route path="/curriculum" element={<Curriculum />} />
-                            <Route path="/intelligence" element={<Intelligence />} />
-                            <Route path="/news" element={<News />} />
-                            <Route path="/arcade" element={<Arcade />} />
-                            <Route path="/playground" element={<Playground />} />
-                            <Route path="/projects" element={<Projects />} />
-                            <Route path="/about" element={<About />} />
-                        </Routes>
+                        <AnimatePresence mode="wait" initial={false}>
+                            <motion.div
+                                key={location.pathname}
+                                initial={{ opacity: 0, y: 14 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -10 }}
+                                transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+                            >
+                                <Routes location={location}>
+                                    <Route path="/" element={<Home />} />
+                                    <Route path="/curriculum" element={<Curriculum />} />
+                                    <Route path="/intelligence" element={<Intelligence />} />
+                                    <Route path="/news" element={<News />} />
+                                    <Route path="/arcade" element={<Arcade />} />
+                                    <Route path="/playground" element={<Playground />} />
+                                    <Route path="/projects" element={<Projects />} />
+                                    <Route path="/about" element={<About />} />
+                                </Routes>
+                            </motion.div>
+                        </AnimatePresence>
                     </Suspense>
                 </Layout>
             )}
-        </>
+        </MotionConfig>
     );
 }
